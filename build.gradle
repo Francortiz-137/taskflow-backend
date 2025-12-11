@@ -39,6 +39,8 @@ dependencies {
 
     // MySQL DRIVER
     runtimeOnly 'com.mysql:mysql-connector-j:9.1.0'
+    // PostgreSQL DRIVER
+    implementation 'org.postgresql:postgresql:42.7.3'
 
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
