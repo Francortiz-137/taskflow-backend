@@ -21,3 +21,9 @@ server:
 
 taskflow:
   ai-url: ${IA_URL}
+
+  app:
+  cors:
+    allowed-origins:
+      - https://Francortiz-137.github.io/
+
