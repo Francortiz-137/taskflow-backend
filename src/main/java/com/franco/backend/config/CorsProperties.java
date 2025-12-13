@@ -9,7 +9,7 @@ import java.util.List;
 @ConfigurationProperties(prefix = "app.cors")
 public class CorsProperties {
 
-    private List<String> allowedOrigins;
+    private List<String> allowedOrigins = List.of();
 
     public List<String> getAllowedOrigins() {
         return allowedOrigins;
