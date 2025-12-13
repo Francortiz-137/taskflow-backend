@@ -25,5 +25,5 @@ taskflow:
   app:
   cors:
     allowed-origins:
-      - https://Francortiz-137.github.io/
+      - https://francortiz-137.github.io/
 
