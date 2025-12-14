@@ -19,3 +19,8 @@ app:
   cors:
     allowed-origins:
       - http://localhost:5173
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

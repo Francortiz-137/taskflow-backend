@@ -28,3 +28,8 @@ taskflow:
     allowed-origins:
       - https://francortiz-137.github.io/
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
