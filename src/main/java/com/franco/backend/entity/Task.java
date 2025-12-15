@@ -1,5 +1,10 @@
 package com.franco.backend.entity;
 
+import java.time.OffsetDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -16,11 +21,23 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 150)
     private String title;
 
+    @Column(length = 500)
     private String description;
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TaskStatus status = TaskStatus.TODO;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @UpdateTimestamp
     @Column(nullable = false)
-    private boolean completed;
+    private OffsetDateTime updatedAt;
+
 }

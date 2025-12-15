@@ -1,15 +1,28 @@
 package com.franco.backend.dto;
 
+import com.franco.backend.entity.TaskStatus;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 
-@Data
-public class TaskRequest {
+@Schema(description = "Request para crear o actualizar una tarea")
+public record TaskRequest(
+        @NotBlank
+        @Schema(example = "Aprender Spring Boot")
+        String title,
 
-    @NotBlank
-    private String title;
+        @Schema(example = "Implementar CRUD profesional")
+        String description,
 
-    private String description;
-
-    private boolean completed;
-}
+        @Schema(
+        description = "Estado de la tarea",
+        allowableValues = {
+            "TODO",
+            "IN_PROGRESS",
+            "DONE",
+            "CANCELLED"
+        },
+        example = "TODO"
+        )
+        TaskStatus status
+) {}

@@ -1,12 +1,14 @@
 package com.franco.backend.dto;
 
-import lombok.Data;
+import java.time.OffsetDateTime;
 
-@Data
-public class TaskResponse {
+import com.franco.backend.entity.TaskStatus;
 
-    private Long id;
-    private String title;
-    private String description;
-    private boolean completed;
-}
+public record TaskResponse(
+        Long id,
+        String title,
+        String description,
+        TaskStatus status,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
+) {}

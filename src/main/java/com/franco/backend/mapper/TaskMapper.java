@@ -1,14 +1,38 @@
 package com.franco.backend.mapper;
 
 import com.franco.backend.entity.Task;
-import com.franco.backend.dto.TaskRequest;
+import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
+
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface TaskMapper {
 
-    Task toEntity(TaskRequest request);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    Task toEntity(CreateTaskRequest request);
+
+    // UPDATE
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateEntity(UpdateTaskRequest request, @MappingTarget Task task);
+
+    // STATUS UPDATE
+    default void updateStatus(
+            UpdateTaskStatusRequest request,
+            @MappingTarget Task task
+    ) {
+        task.setStatus(request.status());
+    }
 
     TaskResponse toResponse(Task task);
 }
