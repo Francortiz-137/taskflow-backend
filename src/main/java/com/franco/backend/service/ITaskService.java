@@ -4,19 +4,17 @@ import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.entity.TaskStatus;
 
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 public interface ITaskService {
 
     TaskResponse create(CreateTaskRequest request);
 
     List<TaskResponse> findAll();
-
-    Page<TaskResponse> findAll(Pageable pageable);
 
     TaskResponse findById(Long id);
 
@@ -25,4 +23,6 @@ public interface ITaskService {
     TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request);
 
     void delete(Long id);
+
+    Page<TaskResponse> findAll(int page, int size, String sort, TaskStatus status, String title);
 }

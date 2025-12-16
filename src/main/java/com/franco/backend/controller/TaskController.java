@@ -3,10 +3,10 @@ package com.franco.backend.controller;
 import com.franco.backend.config.SwaggerExamples;
 import com.franco.backend.dto.ApiErrorResponse;
 import com.franco.backend.dto.CreateTaskRequest;
-import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;
@@ -96,26 +96,22 @@ public class TaskController {
             description = "Sort format: field,direction (e.g. title,asc)",
             example = "createdAt,desc"
          )
-        @RequestParam(defaultValue = "createdAt,desc") String sort
+        @RequestParam(defaultValue = "createdAt,desc") String sort,
+
+        @Parameter(
+            description = "Estado de la tarea",
+            schema = @Schema(implementation = TaskStatus.class)
+        )
+        @RequestParam(required = false) TaskStatus status,
+
+        @Parameter(
+            description = "Buscar por título (contiene)",
+            example = "spring"
+        )
+        @RequestParam(required = false) String title
     ) {
-        final Set<String> ALLOWED_SORTS = Set.of("createdAt", "title", "status");
-
-        if (!ALLOWED_SORTS.contains(sort.split(",")[0])) {
-            throw new BadRequestException("Invalid sort property: " + sort.split(",")[0]);
-        }
-
-        String[] sortParams = sort.split(",");
-        Sort.Direction direction = Sort.Direction.fromOptionalString(
-                sortParams.length > 1 ? sortParams[1] : "asc"
-        ).orElse(Sort.Direction.ASC);
-
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(direction, sortParams[0])
-        );
-
-        return taskService.findAll(pageable);
+        
+        return taskService.findAll(page, size, sort, null, null);
 }
 
     // READ TASK BY ID
