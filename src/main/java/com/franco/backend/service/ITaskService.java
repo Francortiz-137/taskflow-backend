@@ -1,8 +1,9 @@
 package com.franco.backend.service;
 
 import com.franco.backend.dto.CreateTaskRequest;
-import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
 
 import java.util.List;
 
@@ -19,7 +20,9 @@ public interface ITaskService {
 
     TaskResponse findById(Long id);
 
-    TaskResponse update(Long id, TaskRequest request);
+    TaskResponse update(Long id, UpdateTaskRequest request);
+    
+    TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request);
 
     void delete(Long id);
 }

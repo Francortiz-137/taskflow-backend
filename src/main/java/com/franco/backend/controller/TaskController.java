@@ -1,8 +1,13 @@
 package com.franco.backend.controller;
 
+import com.franco.backend.config.SwaggerExamples;
+import com.franco.backend.dto.ApiErrorResponse;
 import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,13 +16,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 
 import java.util.List;
+import java.util.Set;
 
 @Tag(name = "Tasks", description = "Task management endpoints")
 @RestController
@@ -27,58 +39,173 @@ public class TaskController {
 
     private final ITaskService taskService;
 
+    // CREATE TASK
     @Operation(summary = "Create a new task")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Tarea creada"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Error de validación",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(value = SwaggerExamples.VALIDATION_ERROR)
+            )
+        )
+    })
     @PostMapping
+    @ResponseStatus(code = HttpStatus.CREATED)
     public TaskResponse create(@RequestBody @Valid CreateTaskRequest request) {
         return taskService.create(request);
     }
 
+    // READ TASKS
     @Operation(summary = "Get a list with all tasks")
     @GetMapping("/all")
     public List<TaskResponse> findAll() {
         return taskService.findAll();
     }
 
-    @Operation(summary = "Get paginated tasks")
+    // READ PAGINATED TASKS
+    @Operation(
+    summary = "Listar tareas",
+    description = """
+        Devuelve una lista paginada de tareas.
+
+        Ejemplos de sort:
+        - createdAt,desc
+        - title,asc
+        - status,asc
+        """
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista paginada")
+    })
     @GetMapping
     public Page<TaskResponse> findAllPages(
-            @RequestParam(defaultValue = "0") int page,
+        @Parameter(description = "Número de página (0-based)", example = "0")
+        @RequestParam(defaultValue = "0") int page,
+
+        @Parameter(description = "Cantidad de elementos por página", example = "10")
         @RequestParam(defaultValue = "10") int size,
+
         @Parameter(
             description = "Sort format: field,direction (e.g. title,asc)",
             example = "createdAt,desc"
          )
         @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
-    String[] sortParams = sort.split(",");
-    Sort.Direction direction = Sort.Direction.fromOptionalString(
-            sortParams.length > 1 ? sortParams[1] : "asc"
-    ).orElse(Sort.Direction.ASC);
+        final Set<String> ALLOWED_SORTS = Set.of("createdAt", "title", "status");
 
-    Pageable pageable = PageRequest.of(
-            page,
-            size,
-            Sort.by(direction, sortParams[0])
-    );
+        if (!ALLOWED_SORTS.contains(sort.split(",")[0])) {
+            throw new BadRequestException("Invalid sort property: " + sort.split(",")[0]);
+        }
 
-    return taskService.findAll(pageable);
+        String[] sortParams = sort.split(",");
+        Sort.Direction direction = Sort.Direction.fromOptionalString(
+                sortParams.length > 1 ? sortParams[1] : "asc"
+        ).orElse(Sort.Direction.ASC);
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(direction, sortParams[0])
+        );
+
+        return taskService.findAll(pageable);
 }
 
-    @Operation(summary = "Get a task by its ID")
+    // READ TASK BY ID
+    @Operation(
+    summary = "Obtener una tarea por id",
+    description = "Devuelve una tarea existente"
+)
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tarea encontrada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TaskResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tarea no encontrada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(value = SwaggerExamples.NOT_FOUND)
+            )
+        )
+    })
     @GetMapping("/{id}")
     public TaskResponse findById(@PathVariable Long id) {
         return taskService.findById(id);
     }
 
+    // UPDATE TASK
     @Operation(summary = "Update an existing task")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tarea encontrada y actualizada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TaskResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tarea no encontrada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(value = SwaggerExamples.NOT_FOUND)
+            )
+        )
+    })
     @PutMapping("/{id}")
     public TaskResponse update(
             @PathVariable Long id,
-            @RequestBody @Valid TaskRequest request
+            @RequestBody @Valid UpdateTaskRequest request
     ) {
         return taskService.update(id, request);
     }
 
+    // UPDATE TASK STATUS
+    @Operation(summary = "Update the status of an existing task")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Tarea encontrada y actualizada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = TaskResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tarea no encontrada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(value = SwaggerExamples.NOT_FOUND)
+            )
+        )
+    })
+    @PutMapping("/{id}/status")
+    public TaskResponse updateStatus(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateTaskStatusRequest request
+    ) {
+        return taskService.updateStatus(id, request);
+    }
+
+    // DELETE TASK
     @Operation(summary = "Delete a task by its ID")
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {

@@ -2,9 +2,12 @@ package com.franco.backend.service.impl;
 
 import com.franco.backend.entity.Task;
 import com.franco.backend.entity.TaskStatus;
+import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.repository.TaskRepository;
 import com.franco.backend.service.ITaskService;
@@ -45,18 +48,17 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     public TaskResponse findById(Long id) {
         Task task = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
         return mapper.toResponse(task);
     }
 
     @Override
-    public TaskResponse update(Long id, TaskRequest request) {
+    public TaskResponse update(Long id, UpdateTaskRequest request) {
         Task task = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
 
         task.setTitle(request.title());
         task.setDescription(request.description());
-        task.setStatus(request.status());
 
         return mapper.toResponse(repository.save(task));
     }
@@ -71,5 +73,15 @@ public class TaskServiceImpl implements ITaskService {
         
         return repository.findAll(pageable)
                 .map(mapper::toResponse);
+    }
+
+    @Override
+    public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
+        Task task = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+
+        mapper.updateStatus(request, task);
+
+        return mapper.toResponse(repository.save(task));
     }
 }
