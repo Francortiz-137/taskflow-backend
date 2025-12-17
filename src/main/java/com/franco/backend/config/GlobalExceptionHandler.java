@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.validation.ConstraintViolationException;
 
 import java.time.OffsetDateTime;
 
@@ -50,4 +51,26 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(response);
     }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+        public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+                ConstraintViolationException ex,
+                HttpServletRequest request
+        ) {
+        String message = ex.getConstraintViolations()
+                .stream()
+                .map(v -> v.getMessage())
+                .findFirst()
+                .orElse("Invalid request");
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                400,
+                "VALIDATION_ERROR",
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+        }
 }

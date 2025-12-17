@@ -7,15 +7,12 @@ import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
-import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +29,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Set;
 
 @Tag(name = "Tasks", description = "Task management endpoints")
 @RestController
@@ -151,7 +147,10 @@ public class TaskController {
         )
     })
     @GetMapping("/{id}")
-    public TaskResponse findById(@PathVariable Long id) {
+    public TaskResponse findById(
+        @PathVariable 
+        @Positive(message = "id must be greater than 0")
+        Long id) {
         return taskService.findById(id);
     }
 

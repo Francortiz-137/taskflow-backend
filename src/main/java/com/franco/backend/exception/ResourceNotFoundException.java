@@ -17,4 +17,9 @@ public class ResourceNotFoundException extends ApiException {
     public String getError() {
         return "NOT_FOUND";
     }
+
+    public static ResourceNotFoundException taskNotFound(Long id) {
+        return new ResourceNotFoundException("Task with id " + id + " not found");
+    }
+
 }

@@ -27,6 +27,7 @@ import com.franco.backend.config.CorsProperties;
 import com.franco.backend.config.GlobalExceptionHandler;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.entity.TaskStatus;
+import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.service.impl.TaskServiceImpl;
 
@@ -147,6 +148,39 @@ class TaskControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.message").value("title: must not be blank"));
+    }
+
+    // Get by Id
+    @Test
+    void shouldReturnTaskById() throws Exception {
+        TaskResponse task = new TaskResponse(
+                1L, "Task", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now()
+        );
+
+        when(taskService.findById(1L)).thenReturn(task);
+
+        mockMvc.perform(get("/api/tasks/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Task"));
+    }
+
+    @Test
+    void shouldReturn404WhenTaskNotFound() throws Exception {
+        when(taskService.findById(99L))
+                .thenThrow(new ResourceNotFoundException("Task with id 99 not found"));
+
+        mockMvc.perform(get("/api/tasks/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("Task with id 99 not found"));
+    }
+
+    @Test
+    void shouldFailWhenIdIsInvalid() throws Exception {
+        mockMvc.perform(get("/api/tasks/0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
     }
 
 

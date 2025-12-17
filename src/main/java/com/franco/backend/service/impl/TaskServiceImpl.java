@@ -54,14 +54,15 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     public TaskResponse findById(Long id) {
         Task task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
+
         return mapper.toResponse(task);
     }
 
     @Override
     public TaskResponse update(Long id, UpdateTaskRequest request) {
         Task task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -109,7 +110,8 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
         Task task = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task with id " + id + " not found"));
+                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
+
 
         mapper.updateStatus(request, task);
 
