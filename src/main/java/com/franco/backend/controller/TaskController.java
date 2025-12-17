@@ -159,12 +159,20 @@ public class TaskController {
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
-            description = "Tarea encontrada y actualizada",
+            description = "Tarea actualizada",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = TaskResponse.class)
             )
         ),
+         @ApiResponse(
+            responseCode = "400",
+            description = "Error de validación",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+         ),
         @ApiResponse(
             responseCode = "404",
             description = "Tarea no encontrada",
@@ -177,8 +185,13 @@ public class TaskController {
     })
     @PutMapping("/{id}")
     public TaskResponse update(
-            @PathVariable Long id,
-            @RequestBody @Valid UpdateTaskRequest request
+            @PathVariable 
+            @Positive(message = "id must be greater than 0")
+            Long id,
+
+            @RequestBody 
+            @Valid 
+            UpdateTaskRequest request
     ) {
         return taskService.update(id, request);
     }
@@ -195,6 +208,14 @@ public class TaskController {
             )
         ),
         @ApiResponse(
+        responseCode = "400",
+        description = "Error de validación",
+        content = @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = ApiErrorResponse.class)
+        )
+    ),
+        @ApiResponse(
             responseCode = "404",
             description = "Tarea no encontrada",
             content = @Content(
@@ -206,16 +227,49 @@ public class TaskController {
     })
     @PutMapping("/{id}/status")
     public TaskResponse updateStatus(
-            @PathVariable Long id,
-            @RequestBody @Valid UpdateTaskStatusRequest request
+            @PathVariable 
+            @Positive(message = "id must be greater than 0")
+            Long id,
+
+            @RequestBody
+            @Valid 
+            UpdateTaskStatusRequest request
     ) {
         return taskService.updateStatus(id, request);
     }
 
     // DELETE TASK
     @Operation(summary = "Delete a task by its ID")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "204",
+            description = "Tarea eliminada correctamente"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Error de validación",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Tarea no encontrada",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ApiErrorResponse.class),
+                examples = @ExampleObject(value = SwaggerExamples.NOT_FOUND)
+            )
+        )
+    })
+    @ResponseStatus(code = HttpStatus.NO_CONTENT)
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        taskService.delete(id);
+    public void delete(
+        @PathVariable        
+        @Positive(message = "id must be greater than 0")
+        Long id
+    ) {    
+            taskService.delete(id);
     }
 }

@@ -64,16 +64,22 @@ public class TaskServiceImpl implements ITaskService {
         Task task = repository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
 
-        task.setTitle(request.title());
-        task.setDescription(request.description());
+        mapper.updateEntity(request, task);
 
-        return mapper.toResponse(repository.save(task));
+        Task saved = repository.save(task);
+
+        return mapper.toResponse(saved);
     }
 
     @Override
     public void delete(Long id) {
-        repository.deleteById(id);
-    }
+    Task task = repository.findById(id)
+            .orElseThrow(() ->
+                ResourceNotFoundException.taskNotFound(id)
+            );
+
+    repository.delete(task);
+}
 
     @Override
     public Page<TaskResponse> findAll(
@@ -111,7 +117,6 @@ public class TaskServiceImpl implements ITaskService {
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
         Task task = repository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
-
 
         mapper.updateStatus(request, task);
 

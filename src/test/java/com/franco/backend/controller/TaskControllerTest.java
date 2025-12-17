@@ -1,10 +1,15 @@
 package com.franco.backend.controller;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,6 +31,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.franco.backend.config.CorsProperties;
 import com.franco.backend.config.GlobalExceptionHandler;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
@@ -183,5 +190,182 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
     }
 
+
+    @Test
+        void shouldUpdateTask() throws Exception {
+        TaskResponse updated = new TaskResponse(
+                1L,
+                "Updated title",
+                "Updated desc",
+                TaskStatus.TODO,
+                OffsetDateTime.now().minusDays(1),
+                OffsetDateTime.now()
+        );
+
+        when(taskService.update(eq(1L), any(UpdateTaskRequest.class)))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/tasks/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "title": "Updated title",
+                        "description": "Updated desc"
+                        }
+                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated title"))
+                .andExpect(jsonPath("$.description").value("Updated desc"));
+        }
+
+
+        @Test
+        void shouldReturn404WhenUpdatingNonExistingTask() throws Exception {
+        when(taskService.update(eq(99L), any(UpdateTaskRequest.class)))
+                .thenThrow(new ResourceNotFoundException("Task with id 99 not found"));
+
+        mockMvc.perform(put("/api/tasks/99")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "title": "Title"
+                        }
+                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+        }
+
+        @Test
+        void shouldFailWhenTitleIsBlankOnUpdate() throws Exception {
+        mockMvc.perform(put("/api/tasks/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "title": ""
+                        }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        void shouldFailWhenUpdatingWithInvalidId() throws Exception {
+        mockMvc.perform(put("/api/tasks/0")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "title": "Valid title"
+                        }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+
+        @Test
+        void shouldUpdateTaskStatus() throws Exception {
+        TaskResponse updated = new TaskResponse(
+                1L,
+                "Task",
+                null,
+                TaskStatus.DONE,
+                OffsetDateTime.now().minusDays(1),
+                OffsetDateTime.now()
+        );
+
+        when(taskService.updateStatus(eq(1L), any(UpdateTaskStatusRequest.class)))
+                .thenReturn(updated);
+
+        mockMvc.perform(put("/api/tasks/1/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "status": "DONE"
+                        }
+                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DONE"));
+        }
+
+        @Test
+        void shouldFailWhenStatusIsMissing() throws Exception {
+        mockMvc.perform(put("/api/tasks/1/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        { }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        void shouldFailWhenStatusIsInvalid() throws Exception {
+        mockMvc.perform(put("/api/tasks/1/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "status": "INVALID"
+                        }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("status: invalid value"));
+        }
+
+
+        @Test
+        void shouldReturn404WhenUpdatingStatusOfNonExistingTask() throws Exception {
+        when(taskService.updateStatus(eq(99L), any(UpdateTaskStatusRequest.class)))
+                .thenThrow(new ResourceNotFoundException("Task with id 99 not found"));
+
+        mockMvc.perform(put("/api/tasks/99/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "status": "DONE"
+                        }
+                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+        }
+
+        @Test
+        void shouldFailWhenUpdatingStatusWithInvalidId() throws Exception {
+        mockMvc.perform(put("/api/tasks/0/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                        "status": "DONE"
+                        }
+                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+
+        //DELETE TASK
+        @Test
+        void shouldDeleteTask() throws Exception {
+        doNothing().when(taskService).delete(1L);
+
+        mockMvc.perform(delete("/api/tasks/1"))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void shouldReturn404WhenDeletingNonExistingTask() throws Exception {
+        doThrow(new ResourceNotFoundException("Task with id 99 not found"))
+                .when(taskService).delete(99L);
+
+        mockMvc.perform(delete("/api/tasks/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+        }
+
+        @Test
+        void shouldFailWhenDeletingWithInvalidId() throws Exception {
+        mockMvc.perform(delete("/api/tasks/0"))
+                .andExpect(status().isBadRequest());
+        }
 
 }

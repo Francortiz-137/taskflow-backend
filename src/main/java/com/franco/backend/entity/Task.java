@@ -40,4 +40,16 @@ public class Task {
     @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        OffsetDateTime now = OffsetDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+    }
+
 }
