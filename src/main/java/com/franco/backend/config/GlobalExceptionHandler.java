@@ -19,13 +19,12 @@ public class GlobalExceptionHandler {
             ApiException ex,
             HttpServletRequest request
     ) {
-        ApiErrorResponse response = ApiErrorResponse.builder()
-                .timestamp(OffsetDateTime.now())
-                .status(ex.getStatus())
-                .error(ex.getError())
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
+        ApiErrorResponse response = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                ex.getStatus(),
+                ex.getError(),
+                ex.getMessage(),
+                request.getRequestURI());
 
         return ResponseEntity.status(ex.getStatus()).body(response);
     }
@@ -42,13 +41,12 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Invalid request");
 
-        ApiErrorResponse response = ApiErrorResponse.builder()
-                .timestamp(OffsetDateTime.now())
-                .status(400)
-                .error("VALIDATION_ERROR")
-                .message(message)
-                .path(request.getRequestURI())
-                .build();
+        ApiErrorResponse response = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                400,
+                "VALIDATION_ERROR",
+                message,
+                request.getRequestURI());
 
         return ResponseEntity.badRequest().body(response);
     }

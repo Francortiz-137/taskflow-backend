@@ -17,6 +17,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,7 +30,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
@@ -35,6 +38,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
+@Validated
 public class TaskController {
 
     private final ITaskService taskService;
@@ -56,10 +60,18 @@ public class TaskController {
             )
         )
     })
-    @PostMapping
+    @PostMapping(
+    consumes = MediaType.APPLICATION_JSON_VALUE,
+    produces = MediaType.APPLICATION_JSON_VALUE
+)
     @ResponseStatus(code = HttpStatus.CREATED)
-    public TaskResponse create(@RequestBody @Valid CreateTaskRequest request) {
-        return taskService.create(request);
+    public ResponseEntity<TaskResponse> create(@RequestBody @Valid CreateTaskRequest request) {
+        
+        TaskResponse response = taskService.create(request);
+
+        return ResponseEntity
+            .created(URI.create("/api/tasks/" + response.id()))
+            .body(response);
     }
 
     // READ TASKS
@@ -111,7 +123,7 @@ public class TaskController {
         @RequestParam(required = false) String title
     ) {
         
-        return taskService.findAll(page, size, sort, null, null);
+        return taskService.findAll(page, size, sort, status, title);
 }
 
     // READ TASK BY ID
