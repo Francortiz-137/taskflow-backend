@@ -9,6 +9,9 @@ import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 
@@ -95,28 +98,41 @@ public class TaskController {
     @GetMapping
     public Page<TaskResponse> findAllPages(
         @Parameter(description = "Número de página (0-based)", example = "0")
-        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "0") 
+        @Min(value = 0, message = "page must be >= 0")
+        int page,
 
+        
         @Parameter(description = "Cantidad de elementos por página", example = "10")
-        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "10") 
+        @Min(value = 1, message = "size must be >= 1")
+        @Max(value = 100, message = "size must be <= 100")
+        int size,
+
 
         @Parameter(
             description = "Sort format: field,direction (e.g. title,asc)",
             example = "createdAt,desc"
          )
-        @RequestParam(defaultValue = "createdAt,desc") String sort,
+        @RequestParam(defaultValue = "createdAt,desc") 
+        @NotBlank(message = "sort is required")
+        String sort,
+
 
         @Parameter(
             description = "Estado de la tarea",
             schema = @Schema(implementation = TaskStatus.class)
         )
-        @RequestParam(required = false) TaskStatus status,
+        @RequestParam(required = false) 
+        TaskStatus status,
+
 
         @Parameter(
             description = "Buscar por título (contiene)",
             example = "spring"
         )
-        @RequestParam(required = false) String title
+        @RequestParam(required = false) 
+        String title
     ) {
         
         return taskService.findAll(page, size, sort, status, title);

@@ -33,6 +33,10 @@ public class TaskServiceImpl implements ITaskService {
     private final TaskRepository repository;
     private final TaskMapper mapper;
 
+    private static final Set<String> ALLOWED_SORTS =
+        Set.of("createdAt", "title", "status");
+
+
     @Override
     public TaskResponse create(CreateTaskRequest request) {
         Task task = mapper.toEntity(request);
@@ -83,35 +87,35 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public Page<TaskResponse> findAll(
-        int page,
-        int size,
-        String sort,
-        TaskStatus status,
-        String title
-) {
-    final Set<String> ALLOWED_SORTS = Set.of("createdAt", "title", "status");
+            int page,
+            int size,
+            String sort,
+            TaskStatus status,
+            String title
+    ) {
+        String[] sortParams = sort.split(",", 2);
+        String property = sortParams[0];
 
-    if (!ALLOWED_SORTS.contains(sort.split(",")[0])) {
-        throw new BadRequestException("Invalid sort property: " + sort.split(",")[0]);
+        if (!ALLOWED_SORTS.contains(property)) {
+            throw new BadRequestException("Invalid sort property: " + property);
+        }
+
+        Sort.Direction direction =
+                sortParams.length > 1 && sortParams[1].equalsIgnoreCase("asc")
+                        ? Sort.Direction.ASC
+                        : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, property));
+
+        String normalizedTitle =
+                title != null && !title.isBlank() ? title.trim() : null;
+
+        Specification<Task> spec = Specification
+                .where(TaskSpecifications.hasStatus(status))
+                .and(TaskSpecifications.titleContains(normalizedTitle));
+
+        return repository.findAll(spec, pageable).map(mapper::toResponse);
     }
-
-    String[] sortParams = sort.split(",");
-    String property = sortParams[0];
-    Sort.Direction direction =
-            sortParams.length > 1 && sortParams[1].equalsIgnoreCase("asc")
-                    ? Sort.Direction.ASC
-                    : Sort.Direction.DESC;
-
-    Pageable pageable = PageRequest.of(page, size, Sort.by(direction, property));
-
-    Specification<Task> spec = Specification
-            .where(TaskSpecifications.hasStatus(status))
-            .and(TaskSpecifications.titleContains(title));
-
-    return repository
-            .findAll(spec, pageable)
-            .map(mapper::toResponse);
-}
 
     @Override
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
