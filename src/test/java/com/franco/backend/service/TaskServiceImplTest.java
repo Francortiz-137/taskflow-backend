@@ -1,0 +1,361 @@
+package com.franco.backend.service;
+
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.franco.backend.dto.CreateTaskRequest;
+import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateTaskRequest;
+import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.entity.Task;
+import com.franco.backend.entity.TaskStatus;
+import com.franco.backend.exception.ResourceNotFoundException;
+import com.franco.backend.mapper.TaskMapper;
+import com.franco.backend.repository.TaskRepository;
+import com.franco.backend.service.impl.TaskServiceImpl;
+
+import jakarta.validation.ValidationException;
+
+@ExtendWith(MockitoExtension.class)
+public class TaskServiceImplTest {
+
+    @Mock
+    private TaskRepository repository;
+
+    @Mock
+    private TaskMapper mapper;
+
+    @InjectMocks
+    private TaskServiceImpl service;
+
+    @Nested
+    class CreateTask {
+
+        @Test
+        void shouldCreateTask() {
+            CreateTaskRequest request = new CreateTaskRequest(
+                    "New Task",
+                    "Description"
+            );
+
+            Task task = new Task();
+            task.setTitle("New Task");
+            task.setDescription("Description");
+            task.setStatus(TaskStatus.TODO);
+
+            Task savedTask = new Task();
+            savedTask.setId(1L);
+            savedTask.setTitle("New Task");
+            savedTask.setDescription("Description");
+            savedTask.setStatus(TaskStatus.TODO);
+
+            TaskResponse response = new TaskResponse(
+                    1L,
+                    "New Task",
+                    "Description",
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            when(mapper.toEntity(request)).thenReturn(task);
+            when(repository.save(task)).thenReturn(savedTask);
+            when(mapper.toResponse(savedTask)).thenReturn(response);
+
+            TaskResponse result = service.create(request);
+
+            assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.title()).isEqualTo("New Task");
+            assertThat(result.status()).isEqualTo(TaskStatus.TODO);
+
+            verify(mapper).toEntity(request);
+            verify(repository).save(task);
+            verify(mapper).toResponse(savedTask);
+        }
+
+        @Test
+        void shouldCreateTaskWithNullDescription() {
+            CreateTaskRequest request = new CreateTaskRequest(
+                    "New Task",
+                    null
+            );          
+            Task task = new Task();
+            task.setTitle("New Task");
+            task.setDescription(null);
+            task.setStatus(TaskStatus.TODO);
+            Task savedTask = new Task();
+            savedTask.setId(1L);
+            savedTask.setTitle("New Task");
+            savedTask.setDescription(null);
+            savedTask.setStatus(TaskStatus.TODO);
+            TaskResponse response = new TaskResponse(
+                    1L,
+                    "New Task",
+                    null,
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+            when(mapper.toEntity(request)).thenReturn(task);
+            when(repository.save(task)).thenReturn(savedTask);
+            when(mapper.toResponse(savedTask)).thenReturn(response);
+            TaskResponse result = service.create(request);
+            assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.title()).isEqualTo("New Task");
+            assertThat(result.description()).isNull();
+            assertThat(result.status()).isEqualTo(TaskStatus.TODO);
+            verify(mapper).toEntity(request);
+            verify(repository).save(task);
+            verify(mapper).toResponse(savedTask);
+        }
+
+    }
+
+    @Nested
+    class FindAll { 
+        @Test
+        void shouldReturnAllTasks() {
+            Task task1 = new Task();
+            task1.setId(1L);
+            task1.setTitle("Task 1");
+
+            Task task2 = new Task();
+            task2.setId(2L);
+            task2.setTitle("Task 2");
+
+            TaskResponse response1 = new TaskResponse(
+                    1L,
+                    "Task 1",
+                    null,
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            TaskResponse response2 = new TaskResponse(
+                    2L,
+                    "Task 2",
+                    null,
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            when(repository.findAll()).thenReturn(java.util.List.of(task1, task2));
+            when(mapper.toResponse(task1)).thenReturn(response1);
+            when(mapper.toResponse(task2)).thenReturn(response2);
+
+            java.util.List<TaskResponse> results = service.findAll();
+
+            assertThat(results).hasSize(2);
+            assertThat(results.get(0).id()).isEqualTo(1L);
+            assertThat(results.get(1).id()).isEqualTo(2L);
+
+            verify(repository).findAll();
+            verify(mapper).toResponse(task1);
+            verify(mapper).toResponse(task2);
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenNoTasksExist() {
+            when(repository.findAll()).thenReturn(java.util.Collections.emptyList());
+            java.util.List<TaskResponse> results = service.findAll();
+            assertThat(results).isEmpty();
+            verify(repository).findAll();
+            verifyNoInteractions(mapper);
+        }
+
+    }
+
+    @Nested
+    class FindById {
+
+        @Test
+        void shouldReturnTaskWhenExists() {
+            Task task = new Task();
+            task.setId(1L);
+            task.setTitle("Task");
+
+            TaskResponse response = new TaskResponse(
+                    1L,
+                    "Task",
+                    null,
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            when(repository.findById(1L)).thenReturn(Optional.of(task));
+            when(mapper.toResponse(task)).thenReturn(response);
+
+            TaskResponse result = service.findById(1L);
+
+            assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.title()).isEqualTo("Task");
+
+            verify(repository).findById(1L);
+            verify(mapper).toResponse(task);
+        }
+
+        @Test
+        void shouldThrowWhenTaskDoesNotExist() {
+            when(repository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.findById(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Task with id 99 not found");
+
+            verify(repository).findById(99L);
+            verifyNoInteractions(mapper);
+        }
+
+    }
+
+
+    @Nested
+    class UpdateTask {
+
+    @Test
+    void shouldUpdateTask() {
+        UpdateTaskRequest request = new UpdateTaskRequest(
+                "Updated title",
+                "Updated description"
+        );
+
+        Task existing = new Task();
+        existing.setId(1L);
+        existing.setTitle("Old title");
+
+        TaskResponse response = new TaskResponse(
+                1L,
+                "Updated title",
+                "Updated description",
+                TaskStatus.TODO,
+                OffsetDateTime.now().minusDays(1),
+                OffsetDateTime.now()
+        );
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(existing);
+        when(mapper.toResponse(existing)).thenReturn(response);
+
+        TaskResponse result = service.update(1L, request);
+
+        assertThat(result.title()).isEqualTo("Updated title");
+
+        verify(repository).findById(1L);
+        verify(mapper).updateEntity(request, existing);
+        verify(repository).save(existing);
+        verify(mapper).toResponse(existing);
+    }
+    @Test
+    void shouldThrowWhenUpdatingNonExistingTask() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(99L, new UpdateTaskRequest("t", null)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Task with id 99 not found");
+
+        verify(repository).findById(99L);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+}
+
+
+    @Nested
+    class UpdateStatus {
+
+    @Test
+    void shouldUpdateTaskStatus() {
+        UpdateTaskStatusRequest request =
+                new UpdateTaskStatusRequest(TaskStatus.DONE);
+
+        Task existing = new Task();
+        existing.setId(1L);
+        existing.setStatus(TaskStatus.TODO);
+
+        TaskResponse response = new TaskResponse(
+                1L,
+                "Task",
+                null,
+                TaskStatus.DONE,
+                OffsetDateTime.now().minusDays(1),
+                OffsetDateTime.now()
+        );
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(existing);
+        when(mapper.toResponse(existing)).thenReturn(response);
+
+        TaskResponse result = service.updateStatus(1L, request);
+
+        assertThat(result.status()).isEqualTo(TaskStatus.DONE);
+
+        verify(repository).findById(1L);
+        verify(mapper).updateStatus(request, existing);
+        verify(repository).save(existing);
+        verify(mapper).toResponse(existing);
+    }
+    @Test
+    void shouldThrowWhenUpdatingStatusOfNonExistingTask() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateStatus(99L,
+                new UpdateTaskStatusRequest(TaskStatus.DONE)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Task with id 99 not found");
+
+        verify(repository).findById(99L);
+        verifyNoInteractions(mapper);
+    }
+}
+
+
+    @Nested
+    class DeleteTask {
+
+        @Test
+        void shouldDeleteTask() {
+            Task task = new Task();
+            task.setId(1L);
+
+            when(repository.findById(1L)).thenReturn(Optional.of(task));
+            doNothing().when(repository).delete(task);
+
+            service.delete(1L);
+
+            verify(repository).findById(1L);
+            verify(repository).delete(task);
+        }
+        
+            @Test
+        void shouldThrowWhenDeletingNonExistingTask() {
+            when(repository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.delete(99L))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Task with id 99 not found");
+
+            verify(repository).findById(99L);
+            verifyNoMoreInteractions(repository);
+        }
+    }
+
+
+}

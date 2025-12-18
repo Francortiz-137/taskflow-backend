@@ -17,6 +17,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -54,93 +56,45 @@ class TaskControllerTest {
     @MockitoBean
     CorsProperties corsProperties;
 
-    @Test
-    void shouldListTasks() throws Exception {
-        TaskResponse task = new TaskResponse(1L, "Aprender Spring", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now());
-
-        Page<TaskResponse> page = new PageImpl<>(List.of(task));
-
-       when(taskService.findAll(
-        anyInt(),
-        anyInt(),
-        eq("createdAt,desc"),
-        isNull(),
-        isNull()
-        )).thenReturn(page);
+    private final OffsetDateTime now = OffsetDateTime.now();
 
 
 
-        mockMvc.perform(get("/api/tasks"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(1))
-                .andExpect(jsonPath("$.content[0].title").value("Aprender Spring"))
-                .andExpect(jsonPath("$.content[0].status").value("TODO"));
-    }
+    // =========================
+    // POST /api/tasks
+    // =========================
 
-    @Test
-    void shouldFilterByStatus() throws Exception {
-        TaskResponse task = new TaskResponse(2L, "Task Done", null, TaskStatus.DONE, OffsetDateTime.now(), OffsetDateTime.now());
+     @Nested
+     @DisplayName("POST /api/tasks")
+    class CreateTask {
 
-        Page<TaskResponse> page = new PageImpl<>(List.of(task));
+        @Test
+        void shouldCreateTask() throws Exception {
+        TaskResponse created = new TaskResponse(
+                1L,
+                "New Task",     
+                "Task description",
+                TaskStatus.TODO,
+                now.minusDays(1),
+                now
+        );      
 
-        when(taskService.findAll(
-                anyInt(),
-                anyInt(),
-                eq("createdAt,desc"),
-                eq(TaskStatus.DONE),
-                isNull()
-        )).thenReturn(page);
+        when(taskService.create(any()))
+                .thenReturn(created);
 
-        mockMvc.perform(get("/api/tasks")
-                .param("status", "DONE"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("DONE"));
-    }
-
-    @Test
-    void shouldFilterByTitle() throws Exception {
-        TaskResponse task = new TaskResponse(3L, "Learn Testing", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now());
-
-        Page<TaskResponse> page = new PageImpl<>(List.of(task));
-
-        when(taskService.findAll(
-        anyInt(),
-        anyInt(),
-        eq("createdAt,desc"),
-        isNull(),
-        eq("Testing")
-        )).thenReturn(page);
-
-
-        mockMvc.perform(get("/api/tasks")
-                .param("title", "Testing"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(3))
-                .andExpect(jsonPath("$.content[0].title").value("Learn Testing"));
-    }
-
-    @Test
-    void shouldApplyPaginationAndSorting() throws Exception {
-        TaskResponse task1 = new TaskResponse(4L, "Task A", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now());
-        TaskResponse task2 = new TaskResponse(5L, "Task B", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now());
-
-        Page<TaskResponse> page = new PageImpl<>(List.of(task1, task2));
-
-        when(taskService.findAll(
-                eq(1),
-                eq(2),
-                eq("title,asc"),
-                isNull(),
-                isNull()
-        )).thenReturn(page);
-
-        mockMvc.perform(get("/api/tasks")
-                .param("page", "1")
-                .param("size", "2")
-                .param("sort", "title,asc"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].id").value(4))
-                .andExpect(jsonPath("$.content[1].id").value(5));
+        mockMvc.perform(post("/api/tasks")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                    "title": "New Task",
+                    "description": "Task description"
+                    }
+                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("New Task"))
+                .andExpect(jsonPath("$.description").value("Task description"))
+                .andExpect(jsonPath("$.status").value("TODO"));
     }
 
     @Test
@@ -157,11 +111,148 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.message").value("title: must not be blank"));
     }
 
-    // Get by Id
+    }
+
+    // =========================
+    // GET /api/tasks
+    // =========================
+    @Nested
+    @DisplayName("GET /api/tasks")
+    class GetTasks {
+
+         @Test
+        void shouldListTasks() throws Exception {
+                TaskResponse task = new TaskResponse(
+                        1L, 
+                        "Aprender Spring", 
+                        null, 
+                        TaskStatus.TODO, 
+                        now.minusDays(1), 
+                        now);
+
+                Page<TaskResponse> page = new PageImpl<>(List.of(task));
+
+        when(taskService.findAll(
+                anyInt(),
+                anyInt(),
+                eq("createdAt,desc"),
+                isNull(),
+                isNull()
+                )).thenReturn(page);
+
+                mockMvc.perform(get("/api/tasks"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].id").value(1))
+                        .andExpect(jsonPath("$.content[0].title").value("Aprender Spring"))
+                        .andExpect(jsonPath("$.content[0].status").value("TODO"));
+        }
+
+        @Test
+        void shouldFilterByStatus() throws Exception {
+                TaskResponse task = new TaskResponse(
+                        2L,
+                        "Task Done", 
+                        null, 
+                        TaskStatus.DONE, 
+                        now.minusDays(1), 
+                        now);
+
+                Page<TaskResponse> page = new PageImpl<>(List.of(task));
+
+                when(taskService.findAll(
+                        anyInt(),
+                        anyInt(),
+                        eq("createdAt,desc"),
+                        eq(TaskStatus.DONE),
+                        isNull()
+                )).thenReturn(page);
+
+                mockMvc.perform(get("/api/tasks")
+                        .param("status", "DONE"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].status").value("DONE"));
+        }
+
+        @Test
+        void shouldFilterByTitle() throws Exception {
+                TaskResponse task = new TaskResponse(
+                        3L, 
+                        "Learn Testing", 
+                        null, 
+                        TaskStatus.TODO, 
+                        now.minusDays(1), 
+                        now);
+
+                Page<TaskResponse> page = new PageImpl<>(List.of(task));
+
+                when(taskService.findAll(
+                anyInt(),
+                anyInt(),
+                eq("createdAt,desc"),
+                isNull(),
+                eq("Testing")
+                )).thenReturn(page);
+
+                mockMvc.perform(get("/api/tasks")
+                        .param("title", "Testing"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].id").value(3))
+                        .andExpect(jsonPath("$.content[0].title").value("Learn Testing"));
+        }
+
+        @Test
+        void shouldApplyPaginationAndSorting() throws Exception {
+                TaskResponse task1 = new TaskResponse(4L, 
+                        "Task A", 
+                        null, 
+                        TaskStatus.TODO, 
+                        now.minusDays(1), 
+                        now);
+                TaskResponse task2 = new TaskResponse(5L, 
+                        "Task B", 
+                        null, 
+                        TaskStatus.TODO, 
+                        now.minusDays(1), 
+                        now);
+
+                Page<TaskResponse> page = new PageImpl<>(List.of(task1, task2));
+
+                when(taskService.findAll(
+                        eq(1),
+                        eq(2),
+                        eq("title,asc"),
+                        isNull(),
+                        isNull()
+                )).thenReturn(page);
+
+                mockMvc.perform(get("/api/tasks")
+                        .param("page", "1")
+                        .param("size", "2")
+                        .param("sort", "title,asc"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content[0].id").value(4))
+                        .andExpect(jsonPath("$.content[1].id").value(5));
+        }
+
+    }
+    
+    // =========================
+    // GET /api/tasks/{id}
+    // =========================
+
+    @Nested
+    @DisplayName("GET /api/tasks/{id}")
+    class GetTasksById {
+
     @Test
     void shouldReturnTaskById() throws Exception {
         TaskResponse task = new TaskResponse(
-                1L, "Task", null, TaskStatus.TODO, OffsetDateTime.now(), OffsetDateTime.now()
+                1L, 
+                "Task", 
+                null, 
+                TaskStatus.TODO, 
+                now.minusDays(1), 
+                now
         );
 
         when(taskService.findById(1L)).thenReturn(task);
@@ -190,16 +281,24 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
     }
 
+    }
 
-    @Test
+    // =========================
+    // PUT /api/tasks/{id}
+    // =========================
+
+    @DisplayName("PUT /api/tasks/{id}")
+    @Nested
+    class UpdateTask {
+        @Test
         void shouldUpdateTask() throws Exception {
         TaskResponse updated = new TaskResponse(
                 1L,
                 "Updated title",
                 "Updated desc",
                 TaskStatus.TODO,
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now()
+                now.minusDays(1),
+                now
         );
 
         when(taskService.update(eq(1L), any(UpdateTaskRequest.class)))
@@ -217,7 +316,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.title").value("Updated title"))
                 .andExpect(jsonPath("$.description").value("Updated desc"));
         }
-
 
         @Test
         void shouldReturn404WhenUpdatingNonExistingTask() throws Exception {
@@ -260,8 +358,15 @@ class TaskControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
+    }
 
-
+    // =========================
+    // PUT /api/tasks/{id}/status
+    // =========================
+    @Nested
+    @DisplayName("PUT /api/tasks/{id}/status")
+    class UpdateTaskStatus {
+    
         @Test
         void shouldUpdateTaskStatus() throws Exception {
         TaskResponse updated = new TaskResponse(
@@ -269,8 +374,8 @@ class TaskControllerTest {
                 "Task",
                 null,
                 TaskStatus.DONE,
-                OffsetDateTime.now().minusDays(1),
-                OffsetDateTime.now()
+                now.minusDays(1),
+                now
         );
 
         when(taskService.updateStatus(eq(1L), any(UpdateTaskStatusRequest.class)))
@@ -312,7 +417,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.message").value("status: invalid value"));
         }
 
-
         @Test
         void shouldReturn404WhenUpdatingStatusOfNonExistingTask() throws Exception {
         when(taskService.updateStatus(eq(99L), any(UpdateTaskStatusRequest.class)))
@@ -342,8 +446,16 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
 
+        }
 
-        //DELETE TASK
+
+    // =========================
+    // DELETE /api/tasks/{id}
+    // =========================
+    @Nested
+    @DisplayName("DELETE /api/tasks/{id}")
+    class DeleteTask {    
+
         @Test
         void shouldDeleteTask() throws Exception {
         doNothing().when(taskService).delete(1L);
@@ -367,5 +479,5 @@ class TaskControllerTest {
         mockMvc.perform(delete("/api/tasks/0"))
                 .andExpect(status().isBadRequest());
         }
-
+    }
 }
