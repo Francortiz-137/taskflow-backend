@@ -36,6 +36,7 @@ import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.service.impl.TaskServiceImpl;
@@ -232,6 +233,39 @@ class TaskControllerTest {
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.content[0].id").value(4))
                         .andExpect(jsonPath("$.content[1].id").value(5));
+        }
+
+        @Test
+        void shouldFailWhenPageIsNegative() throws Exception {
+        mockMvc.perform(get("/api/tasks")
+                .param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+        
+        @Test
+        void shouldFailWhenSizeIsTooLarge() throws Exception {
+        mockMvc.perform(get("/api/tasks")
+                .param("size", "500"))
+                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void shouldFailWhenSortDirectionIsInvalid() throws Exception {
+
+        when(taskService.findAll(
+                anyInt(),
+                anyInt(),
+                eq("title,invalid"),
+                isNull(),
+                isNull()
+        )).thenThrow(new BadRequestException("Invalid sort direction: invalid"));
+
+        mockMvc.perform(get("/api/tasks")
+                .param("sort", "title,invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("Invalid sort direction: invalid"));
         }
 
     }

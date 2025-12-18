@@ -7,6 +7,7 @@ import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.TaskSortField;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.mapper.TaskMapper;
@@ -23,8 +24,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -32,10 +31,6 @@ public class TaskServiceImpl implements ITaskService {
 
     private final TaskRepository repository;
     private final TaskMapper mapper;
-
-    private static final Set<String> ALLOWED_SORTS =
-        Set.of("createdAt", "title", "status");
-
 
     @Override
     public TaskResponse create(CreateTaskRequest request) {
@@ -47,13 +42,6 @@ public class TaskServiceImpl implements ITaskService {
         return mapper.toResponse(repository.save(task));
     }
 
-    @Override
-    public List<TaskResponse> findAll() {
-        return repository.findAll()
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
-    }
 
     @Override
     public TaskResponse findById(Long id) {
@@ -65,15 +53,15 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public TaskResponse update(Long id, UpdateTaskRequest request) {
-        Task task = repository.findById(id)
-                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
+        Task task = getTaskOrThrow(id);
 
-        mapper.updateEntity(request, task);
+        applyUpdate(task, request);
 
         Task saved = repository.save(task);
 
         return mapper.toResponse(saved);
     }
+
 
     @Override
     public void delete(Long id) {
@@ -93,37 +81,87 @@ public class TaskServiceImpl implements ITaskService {
             TaskStatus status,
             String title
     ) {
-        String[] sortParams = sort.split(",", 2);
-        String property = sortParams[0];
+        Sort sortObj = parseSort(sort);
+        Pageable pageable = PageRequest.of(page, size, sortObj);
 
-        if (!ALLOWED_SORTS.contains(property)) {
-            throw new BadRequestException("Invalid sort property: " + property);
-        }
+        String normalizedTitle = normalizeTitle(title);
+        Specification<Task> spec = buildSpecification(status, normalizedTitle);
 
-        Sort.Direction direction =
-                sortParams.length > 1 && sortParams[1].equalsIgnoreCase("asc")
-                        ? Sort.Direction.ASC
-                        : Sort.Direction.DESC;
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, property));
-
-        String normalizedTitle =
-                title != null && !title.isBlank() ? title.trim() : null;
-
-        Specification<Task> spec = Specification
-                .where(TaskSpecifications.hasStatus(status))
-                .and(TaskSpecifications.titleContains(normalizedTitle));
-
-        return repository.findAll(spec, pageable).map(mapper::toResponse);
+        return repository
+                .findAll(spec, pageable)
+                .map(mapper::toResponse);
     }
+
 
     @Override
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
-        Task task = repository.findById(id)
-                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
-
+        Task task = getTaskOrThrow(id);
         mapper.updateStatus(request, task);
-
         return mapper.toResponse(repository.save(task));
     }
+
+    // PRIVATE METHODS
+    //----------------
+    // FIND TASK
+    //----------------
+
+    private Sort parseSort(String sort) {
+        String[] params = sort.split(",", 2);
+
+        String property = params[0].trim();
+        String directionParam =
+                params.length > 1 ? params[1].trim().toLowerCase() : "desc";
+
+        if (!TaskSortField.isValid(property)) {
+            throw new BadRequestException("Invalid sort property: " + property);
+        }
+
+        if (!directionParam.equals("asc") && !directionParam.equals("desc")) {
+            throw new BadRequestException("Invalid sort direction: " + directionParam);
+        }
+
+        Sort.Direction direction =
+                directionParam.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        return Sort.by(direction, property);
+    }
+
+    private String normalizeTitle(String title) {
+        return (title == null || title.isBlank()) ? null : title.trim();
+    }
+
+    private Specification<Task> buildSpecification(
+        TaskStatus status,
+        String title
+    ) {
+        return Specification
+                .where(TaskSpecifications.hasStatus(status))
+                .and(TaskSpecifications.titleContains(title));
+    }
+
+    //----------------------
+    // GET TASK OR THROW
+    //----------------------
+    private Task getTaskOrThrow(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
+    }
+
+
+    //----------------------
+    // UPDATE TASK
+    //----------------------
+    private void applyUpdate(Task task, UpdateTaskRequest request) {
+    if (isEmptyUpdate(request)) {
+        throw new BadRequestException("At least one field must be provided for update");
+    }
+
+        mapper.updateEntity(request, task);
+    }
+
+    private boolean isEmptyUpdate(UpdateTaskRequest request) {
+        return request.title() == null && request.description() == null;
+    }
+
+
 }

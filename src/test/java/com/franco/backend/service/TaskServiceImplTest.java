@@ -1,5 +1,6 @@
 package com.franco.backend.service;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -7,6 +8,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Nested;
@@ -15,6 +17,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.jpa.domain.Specification;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -24,12 +31,12 @@ import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.Task;
 import com.franco.backend.entity.TaskStatus;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.repository.TaskRepository;
 import com.franco.backend.service.impl.TaskServiceImpl;
 
-import jakarta.validation.ValidationException;
 
 @ExtendWith(MockitoExtension.class)
 public class TaskServiceImplTest {
@@ -160,12 +167,11 @@ public class TaskServiceImplTest {
             when(mapper.toResponse(task1)).thenReturn(response1);
             when(mapper.toResponse(task2)).thenReturn(response2);
 
-            java.util.List<TaskResponse> results = service.findAll();
+            Page<TaskResponse> results = service.findAll(0, 0, null, null, null);
 
             assertThat(results).hasSize(2);
-            assertThat(results.get(0).id()).isEqualTo(1L);
-            assertThat(results.get(1).id()).isEqualTo(2L);
-
+            assertThat(results.getContent().get(0).id()).isEqualTo(1L);
+            assertThat(results.getContent().get(1).id()).isEqualTo(2L);
             verify(repository).findAll();
             verify(mapper).toResponse(task1);
             verify(mapper).toResponse(task2);
@@ -174,11 +180,107 @@ public class TaskServiceImplTest {
         @Test
         void shouldReturnEmptyListWhenNoTasksExist() {
             when(repository.findAll()).thenReturn(java.util.Collections.emptyList());
-            java.util.List<TaskResponse> results = service.findAll();
+            Page<TaskResponse> results = service.findAll(0, 0, null, null, null);
             assertThat(results).isEmpty();
             verify(repository).findAll();
             verifyNoInteractions(mapper);
         }
+
+        @Test
+        void shouldReturnPageWhenNoFiltersProvided() {
+            Task task = new Task();
+            task.setId(1L);
+            task.setTitle("Task");
+
+            TaskResponse response = new TaskResponse(
+                    1L,
+                    "Task",
+                    null,
+                    TaskStatus.TODO,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            Page<Task> page = new PageImpl<>(List.of(task));
+
+            when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(page);
+            when(mapper.toResponse(task)).thenReturn(response);
+
+            Page<TaskResponse> result =
+                    service.findAll(0, 10, "createdAt,desc", null, null);
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).id()).isEqualTo(1L);
+
+            verify(repository).findAll(any(Specification.class), any(Pageable.class));
+            verify(mapper).toResponse(task);
+        }
+
+        @Test
+        void shouldApplyStatusAndTitleFilters() {
+            Task task = new Task();
+            task.setId(2L);
+            task.setTitle("Learn Spring");
+            task.setStatus(TaskStatus.DONE);
+
+            TaskResponse response = new TaskResponse(
+                    2L,
+                    "Learn Spring",
+                    null,
+                    TaskStatus.DONE,
+                    OffsetDateTime.now(),
+                    OffsetDateTime.now()
+            );
+
+            Page<Task> page = new PageImpl<>(List.of(task));
+
+            when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(page);
+            when(mapper.toResponse(task)).thenReturn(response);
+
+            Page<TaskResponse> result =
+                    service.findAll(0, 10, "title,asc", TaskStatus.DONE, "Spring");
+
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).status()).isEqualTo(TaskStatus.DONE);
+            assertThat(result.getContent().get(0).title()).contains("Spring");
+
+            verify(repository).findAll(any(Specification.class), any(Pageable.class));
+            verify(mapper).toResponse(task);
+        }
+
+        @Test
+        void shouldTrimTitleBeforeFiltering() {
+            when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(Page.empty());
+
+            service.findAll(0, 10, "createdAt,desc", null, "   spring   ");
+
+            verify(repository).findAll(any(Specification.class), any(Pageable.class));
+        }
+
+
+        @Test
+        void shouldThrowWhenSortDirectionIsInvalid() {
+            assertThatThrownBy(() ->
+                service.findAll(0, 10, "title,invalid", null, null)
+            )
+            .isInstanceOf(BadRequestException.class)
+            .hasMessage("Invalid sort direction: invalid");
+        }
+
+        @Test
+        void shouldThrowWhenSortPropertyIsInvalid() {
+            assertThatThrownBy(() ->
+                service.findAll(0, 10, "invalid,asc", null, null)
+            )
+            .isInstanceOf(BadRequestException.class)
+            .hasMessage("Invalid sort property: invalid");
+
+            verifyNoInteractions(repository, mapper);
+        }
+
 
     }
 
@@ -324,6 +426,25 @@ public class TaskServiceImplTest {
         verify(repository).findById(99L);
         verifyNoInteractions(mapper);
     }
+
+    @Test
+    void shouldThrowWhenUpdateRequestIsEmpty() {
+        Task task = new Task();
+        task.setId(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() ->
+            service.update(1L, new UpdateTaskRequest(null, null))
+        )
+        .isInstanceOf(BadRequestException.class)
+        .hasMessage("At least one field must be provided for update");
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
 }
 
 

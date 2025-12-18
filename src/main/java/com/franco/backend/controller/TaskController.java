@@ -73,13 +73,6 @@ public class TaskController {
             .body(response);
     }
 
-    // READ TASKS
-    @Operation(summary = "Get a list with all tasks")
-    @GetMapping("/all")
-    public List<TaskResponse> findAll() {
-        return taskService.findAll();
-    }
-
     // READ PAGINATED TASKS
     @Operation(
     summary = "Listar tareas",
@@ -102,7 +95,7 @@ public class TaskController {
         @Min(value = 0, message = "page must be >= 0")
         int page,
 
-        
+
         @Parameter(description = "Cantidad de elementos por página", example = "10")
         @RequestParam(defaultValue = "10") 
         @Min(value = 1, message = "size must be >= 1")
@@ -115,7 +108,6 @@ public class TaskController {
             example = "createdAt,desc"
          )
         @RequestParam(defaultValue = "createdAt,desc") 
-        @NotBlank(message = "sort is required")
         String sort,
 
 

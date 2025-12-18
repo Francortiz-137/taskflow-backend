@@ -6,15 +6,11 @@ import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
 
-import java.util.List;
-
 import org.springframework.data.domain.Page;
 
 public interface ITaskService {
 
     TaskResponse create(CreateTaskRequest request);
-
-    List<TaskResponse> findAll();
 
     TaskResponse findById(Long id);
 
