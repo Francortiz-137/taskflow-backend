@@ -146,76 +146,47 @@ public class TaskServiceImplTest {
             task2.setTitle("Task 2");
 
             TaskResponse response1 = new TaskResponse(
-                    1L,
-                    "Task 1",
-                    null,
-                    TaskStatus.TODO,
-                    OffsetDateTime.now(),
-                    OffsetDateTime.now()
+                    1L, "Task 1", null, TaskStatus.TODO,
+                    OffsetDateTime.now(), OffsetDateTime.now()
             );
 
             TaskResponse response2 = new TaskResponse(
-                    2L,
-                    "Task 2",
-                    null,
-                    TaskStatus.TODO,
-                    OffsetDateTime.now(),
-                    OffsetDateTime.now()
+                    2L, "Task 2", null, TaskStatus.TODO,
+                    OffsetDateTime.now(), OffsetDateTime.now()
             );
 
-            when(repository.findAll()).thenReturn(java.util.List.of(task1, task2));
+            when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(task1, task2)));
             when(mapper.toResponse(task1)).thenReturn(response1);
             when(mapper.toResponse(task2)).thenReturn(response2);
 
-            Page<TaskResponse> results = service.findAll(0, 0, null, null, null);
+            Page<TaskResponse> results =
+                    service.findAll(0, 10, "createdAt,desc", null, null);
 
-            assertThat(results).hasSize(2);
+            assertThat(results.getContent()).hasSize(2);
             assertThat(results.getContent().get(0).id()).isEqualTo(1L);
             assertThat(results.getContent().get(1).id()).isEqualTo(2L);
-            verify(repository).findAll();
+
+            verify(repository).findAll(any(Specification.class), any(Pageable.class));
             verify(mapper).toResponse(task1);
             verify(mapper).toResponse(task2);
         }
 
+
         @Test
-        void shouldReturnEmptyListWhenNoTasksExist() {
-            when(repository.findAll()).thenReturn(java.util.Collections.emptyList());
-            Page<TaskResponse> results = service.findAll(0, 0, null, null, null);
-            assertThat(results).isEmpty();
-            verify(repository).findAll();
+        void shouldReturnEmptyPageWhenNoTasksExist() {
+            when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                    .thenReturn(Page.empty());
+
+            Page<TaskResponse> results =
+                    service.findAll(0, 10, "createdAt,desc", null, null);
+
+            assertThat(results.getContent()).isEmpty();
+
+            verify(repository).findAll(any(Specification.class), any(Pageable.class));
             verifyNoInteractions(mapper);
         }
 
-        @Test
-        void shouldReturnPageWhenNoFiltersProvided() {
-            Task task = new Task();
-            task.setId(1L);
-            task.setTitle("Task");
-
-            TaskResponse response = new TaskResponse(
-                    1L,
-                    "Task",
-                    null,
-                    TaskStatus.TODO,
-                    OffsetDateTime.now(),
-                    OffsetDateTime.now()
-            );
-
-            Page<Task> page = new PageImpl<>(List.of(task));
-
-            when(repository.findAll(any(Specification.class), any(Pageable.class)))
-                    .thenReturn(page);
-            when(mapper.toResponse(task)).thenReturn(response);
-
-            Page<TaskResponse> result =
-                    service.findAll(0, 10, "createdAt,desc", null, null);
-
-            assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0).id()).isEqualTo(1L);
-
-            verify(repository).findAll(any(Specification.class), any(Pageable.class));
-            verify(mapper).toResponse(task);
-        }
 
         @Test
         void shouldApplyStatusAndTitleFilters() {
