@@ -32,11 +32,9 @@ public class Task {
     @Column(nullable = false, length = 20)
     private TaskStatus status = TaskStatus.TODO;
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
-    @UpdateTimestamp
     @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
