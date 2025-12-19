@@ -205,7 +205,18 @@ public class TaskController {
     }
 
     // UPDATE TASK STATUS
-    @Operation(summary = "Update the status of an existing task")
+    @Operation(
+        summary = "Update task status",
+        description = """
+        Allowed transitions:
+        - TODO → IN_PROGRESS, CANCELLED
+        - IN_PROGRESS → DONE, CANCELLED
+        - DONE / CANCELLED → no transitions allowed
+        This operation is idempotent. 
+        If the task already has the requested status, no changes are made.
+        """
+    )
+
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",

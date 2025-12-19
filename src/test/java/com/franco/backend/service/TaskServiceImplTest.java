@@ -353,7 +353,9 @@ public class TaskServiceImplTest {
 
     @Nested
     class UpdateStatus {
-
+        //--------------------
+        // HAPPY PATH
+        //--------------------
     @Test
     void shouldUpdateTaskStatus() {
         UpdateTaskStatusRequest request =
@@ -361,7 +363,7 @@ public class TaskServiceImplTest {
 
         Task existing = new Task();
         existing.setId(1L);
-        existing.setStatus(TaskStatus.TODO);
+        existing.setStatus(TaskStatus.IN_PROGRESS);
 
         TaskResponse response = new TaskResponse(
                 1L,
@@ -381,10 +383,87 @@ public class TaskServiceImplTest {
         assertThat(result.status()).isEqualTo(TaskStatus.DONE);
 
         verify(repository).findById(1L);
-        verify(mapper).updateStatus(request, existing);
         verify(repository).save(existing);
         verify(mapper).toResponse(existing);
     }
+
+    @Test
+    void shouldAllowValidStatusTransition() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setStatus(TaskStatus.TODO);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+        when(repository.save(task)).thenReturn(task);
+        when(mapper.toResponse(task)).thenReturn(
+            new TaskResponse(
+                1L, "Task", null, TaskStatus.IN_PROGRESS,
+                OffsetDateTime.now(), OffsetDateTime.now()
+            )
+        );
+
+        TaskResponse result = service.updateStatus(
+            1L,
+            new UpdateTaskStatusRequest(TaskStatus.IN_PROGRESS)
+        );
+
+        assertThat(result.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void shouldBeIdempotentWhenStatusIsSame() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setStatus(TaskStatus.DONE);
+
+        TaskResponse response = new TaskResponse(
+            1L,
+            "Task",
+            null,
+            TaskStatus.DONE,
+            OffsetDateTime.now().minusDays(1),
+            OffsetDateTime.now()
+        );
+
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+        when(mapper.toResponse(task)).thenReturn(response);
+
+        TaskResponse result = service.updateStatus(
+            1L,
+            new UpdateTaskStatusRequest(TaskStatus.DONE)
+        );
+
+        assertThat(result.status()).isEqualTo(TaskStatus.DONE);
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+    }
+
+    //--------------------
+    // ERROR CASES
+    //--------------------
+
+    @Test
+    void shouldFailWhenTransitionIsInvalid() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setStatus(TaskStatus.DONE);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() ->
+            service.updateStatus(1L, new UpdateTaskStatusRequest(TaskStatus.TODO))
+        )
+        .isInstanceOf(BadRequestException.class)
+        .hasMessage("Invalid status transition: DONE -> TODO");
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
+
+
     @Test
     void shouldThrowWhenUpdatingStatusOfNonExistingTask() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
@@ -415,6 +494,25 @@ public class TaskServiceImplTest {
         verifyNoMoreInteractions(repository);
         verifyNoInteractions(mapper);
     }
+
+    @Test
+    void shouldFailWhenTransitionIsInvalidEvenIfTargetWasUsedBefore() {
+        Task task = new Task();
+        task.setId(1L);
+        task.setStatus(TaskStatus.CANCELLED);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() ->
+            service.updateStatus(1L, new UpdateTaskStatusRequest(TaskStatus.DONE))
+        )
+        .isInstanceOf(BadRequestException.class)
+        .hasMessage("Invalid status transition: CANCELLED -> DONE");
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+    }
+
 
 }
 

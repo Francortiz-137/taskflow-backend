@@ -30,13 +30,5 @@ public interface TaskMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(UpdateTaskRequest request, @MappingTarget Task task);
 
-    // STATUS UPDATE
-    default void updateStatus(
-            UpdateTaskStatusRequest request,
-            @MappingTarget Task task
-    ) {
-        task.setStatus(request.status());
-    }
-
     TaskResponse toResponse(Task task);
 }

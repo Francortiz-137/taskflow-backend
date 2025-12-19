@@ -5,7 +5,6 @@ import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.dto.CreateTaskRequest;
-import com.franco.backend.dto.TaskRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.TaskSortField;
 import com.franco.backend.dto.UpdateTaskRequest;
@@ -96,9 +95,26 @@ public class TaskServiceImpl implements ITaskService {
     @Override
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
         Task task = getTaskOrThrow(id);
-        mapper.updateStatus(request, task);
+
+        TaskStatus current = task.getStatus();
+        TaskStatus target = request.status();
+
+        // Idempotent case, no change needed
+        if(current == target) {
+            return mapper.toResponse(task);
+        }
+        // Validate transition
+        if (!current.canTransitionTo(target)) {
+            throw new BadRequestException(
+                "Invalid status transition: " + current + " -> " + target
+            );
+        }
+
+        task.setStatus(target);
+
         return mapper.toResponse(repository.save(task));
     }
+
 
     // PRIVATE METHODS
     //----------------
