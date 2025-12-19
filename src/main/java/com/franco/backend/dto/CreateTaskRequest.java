@@ -3,13 +3,13 @@ package com.franco.backend.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "Request para crear una nueva tarea")
+@Schema(description = "Request to create a new task")
 public record CreateTaskRequest(
 
         @NotBlank
-        @Schema(example = "Aprender Spring Boot")
+        @Schema(example = "Buy groceries")
         String title,
 
-        @Schema(example = "Implementar CRUD profesional")
+        @Schema(example = "Milk, Bread, Eggs")
         String description
 ) {}

@@ -11,7 +11,6 @@ import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +30,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
-import java.util.List;
 
 @Tag(name = "Tasks", description = "Task management endpoints")
 @RestController
@@ -47,11 +45,11 @@ public class TaskController {
     @ApiResponses({
         @ApiResponse(
             responseCode = "201",
-            description = "Tarea creada"
+            description = "Task created successfully"
         ),
         @ApiResponse(
             responseCode = "400",
-            description = "Error de validación",
+            description = "Validation error",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class),
@@ -75,11 +73,12 @@ public class TaskController {
 
     // READ PAGINATED TASKS
     @Operation(
-    summary = "Listar tareas",
+    summary = "List paginated tasks",
     description = """
-        Devuelve una lista paginada de tareas.
+        Returns a paginated list of tasks with optional filtering by status and title.
 
-        Ejemplos de sort:
+        Sorting format: field,direction (e.g. title,asc).
+        Allowed sort fields:
         - createdAt,desc
         - title,asc
         - status,asc
@@ -90,13 +89,13 @@ public class TaskController {
     })
     @GetMapping
     public Page<TaskResponse> findAllPages(
-        @Parameter(description = "Número de página (0-based)", example = "0")
+        @Parameter(description = "Page (0-based)", example = "0")
         @RequestParam(defaultValue = "0") 
         @Min(value = 0, message = "page must be >= 0")
         int page,
 
 
-        @Parameter(description = "Cantidad de elementos por página", example = "10")
+        @Parameter(description = "Elements per page", example = "10")
         @RequestParam(defaultValue = "10") 
         @Min(value = 1, message = "size must be >= 1")
         @Max(value = 100, message = "size must be <= 100")
@@ -112,7 +111,7 @@ public class TaskController {
 
 
         @Parameter(
-            description = "Estado de la tarea",
+            description = "Task status to filter by",
             schema = @Schema(implementation = TaskStatus.class)
         )
         @RequestParam(required = false) 
@@ -120,7 +119,7 @@ public class TaskController {
 
 
         @Parameter(
-            description = "Buscar por título (contiene)",
+            description = "Title substring to filter by",
             example = "spring"
         )
         @RequestParam(required = false) 
@@ -132,13 +131,13 @@ public class TaskController {
 
     // READ TASK BY ID
     @Operation(
-    summary = "Obtener una tarea por id",
-    description = "Devuelve una tarea existente"
+    summary = "Get a task by its ID",
+    description = "Returns an existing task"
 )
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
-            description = "Tarea encontrada",
+            description = "Task found",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = TaskResponse.class)
@@ -146,7 +145,7 @@ public class TaskController {
         ),
         @ApiResponse(
             responseCode = "404",
-            description = "Tarea no encontrada",
+            description = "Task not found",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class),
@@ -167,7 +166,7 @@ public class TaskController {
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
-            description = "Tarea actualizada",
+            description = "Task updated successfully",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = TaskResponse.class)
@@ -175,7 +174,7 @@ public class TaskController {
         ),
          @ApiResponse(
             responseCode = "400",
-            description = "Error de validación",
+            description = "Validation error",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class)
@@ -183,7 +182,7 @@ public class TaskController {
          ),
         @ApiResponse(
             responseCode = "404",
-            description = "Tarea no encontrada",
+            description = "Task not found",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class),
@@ -220,7 +219,7 @@ public class TaskController {
     @ApiResponses({
         @ApiResponse(
             responseCode = "200",
-            description = "Tarea encontrada y actualizada",
+            description = "Task updated successfully",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = TaskResponse.class)
@@ -228,7 +227,7 @@ public class TaskController {
         ),
         @ApiResponse(
         responseCode = "400",
-        description = "Error de validación",
+        description = "Validation error",
         content = @Content(
             mediaType = "application/json",
             schema = @Schema(implementation = ApiErrorResponse.class)
@@ -236,7 +235,7 @@ public class TaskController {
     ),
         @ApiResponse(
             responseCode = "404",
-            description = "Tarea no encontrada",
+            description = "Task not found",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class),
@@ -246,10 +245,12 @@ public class TaskController {
     })
     @PutMapping("/{id}/status")
     public TaskResponse updateStatus(
+            @Parameter(description = "ID of the task", example = "1")
             @PathVariable 
             @Positive(message = "id must be greater than 0")
             Long id,
 
+            @Parameter(description = "New status of the task")
             @RequestBody
             @Valid 
             UpdateTaskStatusRequest request
@@ -262,11 +263,11 @@ public class TaskController {
     @ApiResponses({
         @ApiResponse(
             responseCode = "204",
-            description = "Tarea eliminada correctamente"
+            description = "Task deleted successfully"
         ),
         @ApiResponse(
             responseCode = "400",
-            description = "Error de validación",
+            description = "Validation error",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class)
@@ -274,7 +275,7 @@ public class TaskController {
         ),
         @ApiResponse(
             responseCode = "404",
-            description = "Tarea no encontrada",
+            description = "Task not found",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = ApiErrorResponse.class),

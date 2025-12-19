@@ -4,7 +4,7 @@ import java.time.OffsetDateTime;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Respuesta estándar de error")
+@Schema(description = "API error response")
 public record ApiErrorResponse(
     @Schema(example = "2025-12-15T15:10:42.123Z")
     OffsetDateTime timestamp,
