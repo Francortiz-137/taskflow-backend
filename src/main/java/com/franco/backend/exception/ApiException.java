@@ -6,11 +6,20 @@ public abstract class ApiException extends RuntimeException {
 
     private final HttpStatus status;
     private final ErrorCode errorCode;
+    private final String messageKey;
+    private final Object[] args;
 
-    protected ApiException(HttpStatus status, ErrorCode errorCode, String message) {
-        super(message);
+    protected ApiException(
+            HttpStatus status,
+            ErrorCode errorCode,
+            String messageKey,
+            Object... args
+    ) {
+        super(messageKey);
         this.status = status;
         this.errorCode = errorCode;
+        this.messageKey = messageKey;
+        this.args = args;
     }
 
     public HttpStatus getStatus() {
@@ -19,5 +28,13 @@ public abstract class ApiException extends RuntimeException {
 
     public ErrorCode getErrorCode() {
         return errorCode;
+    }
+
+    public String getMessageKey() {
+        return messageKey;
+    }
+
+    public Object[] getArgs() {
+        return args;
     }
 }
