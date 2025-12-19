@@ -35,20 +35,28 @@ public class GlobalExceptionHandler {
     // API Exceptions (negocio)
     // =========================
     @ExceptionHandler(ApiException.class)
-    public ResponseEntity<ApiErrorResponse> handleApiException(
-            ApiException ex,
-            HttpServletRequest request
-    ) {
+        public ResponseEntity<ApiErrorResponse> handleApiException(
+                ApiException ex,
+                HttpServletRequest request
+        ) {
+        String message = messageSource.getMessage(
+                ex.getMessageKey(),
+                ex.getArgs(),
+                ex.getMessageKey(), // fallback visible
+                LocaleContextHolder.getLocale()
+        );
+
         ApiErrorResponse response = new ApiErrorResponse(
                 OffsetDateTime.now(),
                 ex.getStatus().value(),
                 ex.getErrorCode().name(),
-                ex.getMessageKey(),
+                message,
                 request.getRequestURI()
         );
 
         return ResponseEntity.status(ex.getStatus()).body(response);
-    }
+        }
+
 
     // =========================
     // Bean Validation (DTOs)
