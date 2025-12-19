@@ -1,0 +1,15 @@
+package com.franco.backend.service;
+
+import com.franco.backend.dto.CreateUserRequest;
+import com.franco.backend.dto.UserResponse;
+
+import java.util.List;
+
+public interface IUserService {
+
+    UserResponse create(CreateUserRequest request);
+
+    UserResponse findById(Long id);
+
+    List<UserResponse> findAll();
+}

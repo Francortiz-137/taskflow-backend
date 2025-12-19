@@ -11,4 +11,8 @@ public class ResourceNotFoundException extends ApiException {
     public static ResourceNotFoundException taskNotFound(Long id) {
         return new ResourceNotFoundException("task.notFound", id);
     }
+
+    public static ResourceNotFoundException userNotFound(Long id) {
+        return new ResourceNotFoundException("user.notFound", id);
+    }
 }
