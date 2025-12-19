@@ -1,11 +1,23 @@
 package com.franco.backend.exception;
 
+import org.springframework.http.HttpStatus;
+
 public abstract class ApiException extends RuntimeException {
 
-    protected ApiException(String message) {
+    private final HttpStatus status;
+    private final ErrorCode errorCode;
+
+    protected ApiException(HttpStatus status, ErrorCode errorCode, String message) {
         super(message);
+        this.status = status;
+        this.errorCode = errorCode;
     }
 
-    public abstract int getStatus();
-    public abstract String getError();
+    public HttpStatus getStatus() {
+        return status;
+    }
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
+    }
 }

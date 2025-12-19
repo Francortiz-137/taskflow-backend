@@ -30,8 +30,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
-import com.franco.backend.config.GlobalExceptionHandler;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;

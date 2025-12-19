@@ -5,7 +5,7 @@ import com.franco.backend.entity.User;
 import com.franco.backend.mapper.UserMapper;
 import com.franco.backend.repository.UserRepository;
 import com.franco.backend.service.IUserService;
-import com.franco.backend.exception.NotFoundException;
+import com.franco.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public UserDTO getById(Long id) {
         User u = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return mapper.toDTO(u);
     }
 
@@ -42,7 +42,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public UserDTO update(Long id, UserDTO dto) {
         User u = repo.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         u.setName(dto.getName());
         u.setEmail(dto.getEmail());
