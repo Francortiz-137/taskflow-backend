@@ -15,11 +15,21 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+        private final MessageSource messageSource;
+
+        public GlobalExceptionHandler(MessageSource messageSource) {
+                this.messageSource = messageSource;
+        }
 
     // =========================
     // API Exceptions (negocio)
@@ -33,7 +43,7 @@ public class GlobalExceptionHandler {
                 OffsetDateTime.now(),
                 ex.getStatus().value(),
                 ex.getErrorCode().name(),
-                ex.getMessage(),
+                ex.getMessageKey(),
                 request.getRequestURI()
         );
 
@@ -115,7 +125,12 @@ public class GlobalExceptionHandler {
                                 .findFirst())
                         .orElse("field");
 
-                message = fieldName + ": invalid value";
+                message = messageSource.getMessage(
+                "validation.invalidEnum",
+                new Object[]{fieldName},
+                fieldName + ": invalid value",
+                LocaleContextHolder.getLocale()
+                );
             }
         }
 
@@ -138,11 +153,18 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        String message = messageSource.getMessage(
+        "error.internal",
+        null,
+        "Unexpected error",
+        LocaleContextHolder.getLocale()
+);
+
         ApiErrorResponse response = new ApiErrorResponse(
                 OffsetDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 ErrorCode.INTERNAL_ERROR.name(),
-                "Unexpected error",
+                message,
                 request.getRequestURI()
         );
 
@@ -158,12 +180,19 @@ public class GlobalExceptionHandler {
                 ObjectOptimisticLockingFailureException ex,
                 HttpServletRequest request
         ) {
-        ApiErrorResponse response = new ApiErrorResponse(
-                OffsetDateTime.now(),
-                409,
-                "CONFLICT",
+        String message = messageSource.getMessage(
+                "optimistic.lock",
+                null,
                 "The resource was modified by another request. Please retry.",
-                request.getRequestURI()
+                LocaleContextHolder.getLocale()
+        );    
+
+        ApiErrorResponse response = new ApiErrorResponse(
+            OffsetDateTime.now(),
+            HttpStatus.CONFLICT.value(),
+            ErrorCode.CONFLICT.name(),
+            message,
+            request.getRequestURI()
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);

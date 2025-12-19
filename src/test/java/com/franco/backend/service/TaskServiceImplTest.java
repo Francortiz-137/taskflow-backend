@@ -37,6 +37,11 @@ import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.repository.TaskRepository;
 import com.franco.backend.service.impl.TaskServiceImpl;
 
+import com.franco.backend.exception.ApiException;
+import com.franco.backend.exception.ErrorCode;
+import org.springframework.http.HttpStatus;
+
+
 
 @ExtendWith(MockitoExtension.class)
 public class TaskServiceImplTest {
@@ -238,7 +243,12 @@ public class TaskServiceImplTest {
                 service.findAll(0, 10, "title,invalid", null, null)
             )
             .isInstanceOf(BadRequestException.class)
-            .hasMessage("Invalid sort direction: invalid");
+            .satisfies(ex -> {
+                ApiException apiEx = (ApiException) ex;
+                assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+            });
+
         }
 
         @Test
@@ -247,7 +257,12 @@ public class TaskServiceImplTest {
                 service.findAll(0, 10, "invalid,asc", null, null)
             )
             .isInstanceOf(BadRequestException.class)
-            .hasMessage("Invalid sort property: invalid");
+            .satisfies(ex -> {
+                ApiException apiEx = (ApiException) ex;
+                assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+            });
+
 
             verifyNoInteractions(repository, mapper);
         }
@@ -290,8 +305,13 @@ public class TaskServiceImplTest {
             when(repository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.findById(99L))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessage("Task with id 99 not found");
+            .isInstanceOf(ResourceNotFoundException.class)
+            .satisfies(ex -> {
+                ApiException apiEx = (ApiException) ex;
+                assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                assertThat(apiEx.getMessage()).isEqualTo("task.notFound");
+            });
 
             verify(repository).findById(99L);
             verifyNoInteractions(mapper);
@@ -341,8 +361,13 @@ public class TaskServiceImplTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(99L, new UpdateTaskRequest("t", null)))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Task with id 99 not found");
+        .isInstanceOf(ResourceNotFoundException.class)
+        .satisfies(ex -> {
+            ApiException apiEx = (ApiException) ex;
+            assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+            assertThat(apiEx.getMessage()).isEqualTo("task.notFound");
+        });
 
         verify(repository).findById(99L);
         verifyNoMoreInteractions(repository);
@@ -455,7 +480,12 @@ public class TaskServiceImplTest {
             service.updateStatus(1L, new UpdateTaskStatusRequest(TaskStatus.TODO))
         )
         .isInstanceOf(BadRequestException.class)
-        .hasMessage("Invalid status transition: DONE -> TODO");
+        .satisfies(ex -> {
+            ApiException apiEx = (ApiException) ex;
+            assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+        });
+
 
         verify(repository).findById(1L);
         verifyNoMoreInteractions(repository);
@@ -469,9 +499,15 @@ public class TaskServiceImplTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.updateStatus(99L,
-                new UpdateTaskStatusRequest(TaskStatus.DONE)))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Task with id 99 not found");
+        new UpdateTaskStatusRequest(TaskStatus.DONE)))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .satisfies(ex -> {
+            ApiException apiEx = (ApiException) ex;
+            assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+            assertThat(apiEx.getMessage()).isEqualTo("task.notFound");
+        });
+
 
         verify(repository).findById(99L);
         verifyNoInteractions(mapper);
@@ -488,7 +524,12 @@ public class TaskServiceImplTest {
             service.update(1L, new UpdateTaskRequest(null, null))
         )
         .isInstanceOf(BadRequestException.class)
-        .hasMessage("At least one field must be provided for update");
+        .satisfies(ex -> {
+            ApiException apiEx = (ApiException) ex;
+            assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+        });
+
 
         verify(repository).findById(1L);
         verifyNoMoreInteractions(repository);
@@ -507,7 +548,12 @@ public class TaskServiceImplTest {
             service.updateStatus(1L, new UpdateTaskStatusRequest(TaskStatus.DONE))
         )
         .isInstanceOf(BadRequestException.class)
-        .hasMessage("Invalid status transition: CANCELLED -> DONE");
+        .satisfies(ex -> {
+            ApiException apiEx = (ApiException) ex;
+            assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST);
+        });
+
 
         verify(repository).findById(1L);
         verifyNoMoreInteractions(repository);
@@ -539,8 +585,13 @@ public class TaskServiceImplTest {
             when(repository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.delete(99L))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessage("Task with id 99 not found");
+            .isInstanceOf(ResourceNotFoundException.class)
+            .satisfies(ex -> {
+                ApiException apiEx = (ApiException) ex;
+                assertThat(apiEx.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(apiEx.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND);
+                assertThat(apiEx.getMessage()).isEqualTo("task.notFound");
+            });
 
             verify(repository).findById(99L);
             verifyNoMoreInteractions(repository);

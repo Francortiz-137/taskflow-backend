@@ -20,6 +20,7 @@ public interface TaskMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     Task toEntity(CreateTaskRequest request);
 
     // UPDATE
@@ -27,6 +28,7 @@ public interface TaskMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "version", ignore = true)
     void updateEntity(UpdateTaskRequest request, @MappingTarget Task task);
 
     TaskResponse toResponse(Task task);
