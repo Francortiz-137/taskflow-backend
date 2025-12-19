@@ -2,9 +2,6 @@ package com.franco.backend.entity;
 
 import java.time.OffsetDateTime;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
 import jakarta.persistence.*;
 import lombok.*;
 

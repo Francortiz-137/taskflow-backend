@@ -4,7 +4,6 @@ import com.franco.backend.entity.Task;
 import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
-import com.franco.backend.dto.UpdateTaskStatusRequest;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
