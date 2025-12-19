@@ -85,20 +85,20 @@ public class TaskController {
         """
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista paginada")
+        @ApiResponse(responseCode = "200", description = "List of tasks")
     })
     @GetMapping
     public Page<TaskResponse> findAllPages(
         @Parameter(description = "Page (0-based)", example = "0")
         @RequestParam(defaultValue = "0") 
-        @Min(value = 0, message = "page must be >= 0")
+        @Min(value = 0, message = "{validation.page.min}")
         int page,
 
 
         @Parameter(description = "Elements per page", example = "10")
         @RequestParam(defaultValue = "10") 
-        @Min(value = 1, message = "size must be >= 1")
-        @Max(value = 100, message = "size must be <= 100")
+        @Min(value = 1, message = "{validation.size.min}")
+        @Max(value = 100, message = "{validation.size.max}")
         int size,
 
 
@@ -156,7 +156,7 @@ public class TaskController {
     @GetMapping("/{id}")
     public TaskResponse findById(
         @PathVariable 
-        @Positive(message = "id must be greater than 0")
+        @Positive(message = "{validation.id.positive}")
         Long id) {
         return taskService.findById(id);
     }
@@ -193,7 +193,7 @@ public class TaskController {
     @PutMapping("/{id}")
     public TaskResponse update(
             @PathVariable 
-            @Positive(message = "id must be greater than 0")
+            @Positive(message = "{validation.id.positive}")
             Long id,
 
             @RequestBody 
@@ -247,7 +247,7 @@ public class TaskController {
     public TaskResponse updateStatus(
             @Parameter(description = "ID of the task", example = "1")
             @PathVariable 
-            @Positive(message = "id must be greater than 0")
+            @Positive(message = "{validation.id.positive}")
             Long id,
 
             @Parameter(description = "New status of the task")
@@ -287,7 +287,7 @@ public class TaskController {
     @DeleteMapping("/{id}")
     public void delete(
         @PathVariable        
-        @Positive(message = "id must be greater than 0")
+        @Positive(message = "{validation.id.positive}")
         Long id
     ) {    
             taskService.delete(id);
