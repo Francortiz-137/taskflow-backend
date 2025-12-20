@@ -19,6 +19,7 @@ import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.EmailAlreadyExistsException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.service.IUserService;
+import com.franco.backend.config.SecurityConfig;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,11 +31,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+
 @AutoConfigureMockMvc
 @WebMvcTest(UserController.class)
 @Import({
     GlobalExceptionHandler.class,
-    I18nConfig.class
+    I18nConfig.class,
+    SecurityConfig.class
 })
 class UserControllerTest {
 
@@ -133,8 +136,8 @@ class UserControllerTest {
         void shouldReturnUserById() throws Exception {
             UserResponse response = new UserResponse(
                 1L,
-                "user@test.com",
                 "John",
+                "user@test.com",
                 UserRole.USER,
                 now,
                 now

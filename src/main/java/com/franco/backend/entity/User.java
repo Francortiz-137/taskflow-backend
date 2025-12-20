@@ -7,10 +7,7 @@ import com.franco.backend.entity.UserRole;
 
 @Entity
 @Table(
-    name = "users",
-    uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_email", columnNames = "email")
-    }
+    name = "users"
 )
 @Getter
 @Setter
@@ -26,11 +23,12 @@ public class User {
     @Column(nullable = false, length = 150)
     private String name;
 
-    @Column(nullable = false, length = 180)
+    @Column(nullable = false, length = 180, unique = true)
+
     private String email;
 
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,6 +26,8 @@ import org.springframework.data.jpa.domain.Specification;
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.franco.backend.testutil.ApiExceptionAssertions.assertApiException;
 
+import com.franco.backend.api.GlobalExceptionHandler;
+import com.franco.backend.config.SecurityConfig;
 import com.franco.backend.dto.CreateTaskRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
@@ -38,8 +41,8 @@ import com.franco.backend.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 
-
 @ExtendWith(MockitoExtension.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 public class TaskServiceImplTest {
 
     @Mock

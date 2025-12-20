@@ -15,6 +15,7 @@ public interface UserMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
+    @Mapping(target = "passwordHash", source = "password")
     User toEntity(CreateUserRequest request);
 
     UserResponse toResponse(User user);

@@ -32,6 +32,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
+import com.franco.backend.config.SecurityConfig;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
@@ -41,7 +42,7 @@ import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.service.ITaskService;
 
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 @WebMvcTest(TaskController.class)
 class TaskControllerTest {
 

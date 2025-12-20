@@ -8,6 +8,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.franco.backend.api.GlobalExceptionHandler;
+import com.franco.backend.config.SecurityConfig;
+import com.franco.backend.dto.ChangePasswordRequest;
 import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UserResponse;
@@ -25,12 +28,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static com.franco.backend.testutil.ApiExceptionAssertions.assertApiException;
 
-
 @ExtendWith(MockitoExtension.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class UserServiceImplTest {
 
     @Mock
@@ -41,6 +46,10 @@ class UserServiceImplTest {
 
     @InjectMocks
     UserServiceImpl service;
+
+    @Mock
+    PasswordEncoder passwordEncoder;
+
 
     @Nested
     class CreateUser {
@@ -75,6 +84,8 @@ class UserServiceImplTest {
             when(mapper.toEntity(request)).thenReturn(user);
             when(repository.save(user)).thenReturn(saved);
             when(mapper.toResponse(saved)).thenReturn(response);
+            when(passwordEncoder.encode("password")).thenReturn("NEW_HASH");
+
 
             UserResponse result = service.create(request);  
             assertThat(result.id()).isEqualTo(1L);
@@ -197,5 +208,61 @@ class UserServiceImplTest {
             verifyNoInteractions(mapper);
         }
     }
+
+    @Nested
+    class ChangePassword {
+
+    @Test
+    void shouldChangePasswordSuccessfully() {
+        ChangePasswordRequest request =
+            new ChangePasswordRequest("oldPass", "newSecurePass");
+
+        User user = new User();
+        user.setId(1L);
+        user.setPasswordHash("$2a$10$OLD_HASH");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(any(), any())).thenReturn(true);
+        when(passwordEncoder.encode(any())).thenReturn("NEW_HASH");
+
+
+        service.changePassword(1L, request);
+
+        verify(repository).save(user);
+        assertThat(user.getPasswordHash())
+            .isNotEqualTo("newSecurePass");
+    }
+
+    @Test
+    void shouldFailWhenUserDoesNotExist() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertApiException(
+            () -> service.changePassword(99L,
+                new ChangePasswordRequest("old", "new")),
+            HttpStatus.NOT_FOUND,
+            ErrorCode.NOT_FOUND,
+            "user.notFound"
+        );
+    }
+
+    @Test
+    void shouldFailWhenCurrentPasswordIsIncorrect() {
+        User user = new User();
+        user.setId(1L);
+        user.setPasswordHash("$2a$10$HASH");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(any(), any())).thenReturn(false);
+
+        assertApiException(
+            () -> service.changePassword(1L,
+                new ChangePasswordRequest("wrong", "new")),
+            HttpStatus.BAD_REQUEST,
+            ErrorCode.BAD_REQUEST,
+            "user.password.invalid"
+        );
+    }
+}
 
 }

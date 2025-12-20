@@ -15,18 +15,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
+import com.franco.backend.config.I18nConfig;
 import com.franco.backend.exception.ResourceNotFoundException;
-import com.franco.backend.service.impl.TaskServiceImpl;
+import com.franco.backend.service.ITaskService;
+import com.franco.backend.config.SecurityConfig;
 
-@WebMvcTest
-@Import(GlobalExceptionHandler.class)
+@WebMvcTest(TaskController.class)
+@Import({GlobalExceptionHandler.class, 
+        I18nConfig.class,
+        SecurityConfig.class
+    })
 public class TaskControllerI18nTest {
 
     @Autowired
     MockMvc mockMvc;
 
     @MockitoBean
-    TaskServiceImpl taskService;
+    ITaskService taskService;
 
     @MockitoBean
     CorsProperties corsProperties;
