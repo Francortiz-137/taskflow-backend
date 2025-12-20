@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Optional;
 
 import com.franco.backend.dto.CreateUserRequest;
+import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UserResponse;
+import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.entity.User;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.ErrorCode;
@@ -46,9 +48,9 @@ class UserServiceImplTest {
         @Test
         void shouldCreateUser() {
             CreateUserRequest request = new CreateUserRequest(
+                "John",
                 "user@test.com",
-                "password",
-                "John"
+                "password"
             );
 
             User user = new User();
@@ -57,45 +59,39 @@ class UserServiceImplTest {
 
             User saved = new User();
             saved.setId(1L);
-            saved.setEmail("user@test.com");
-            saved.setName("John");
+            saved.setEmail(request.email());
+            saved.setName(request.name());
             saved.setRole(UserRole.USER);
 
             UserResponse response = new UserResponse(
                 1L,
-                "user@test.com",
-                "John",
+                request.name(),
+                request.email(),
                 UserRole.USER,
                 OffsetDateTime.now(),
                 OffsetDateTime.now()
             );
 
-            when(repository.existsByEmail("user@test.com")).thenReturn(false);
-
-            User mapped = new User();
-            mapped.setEmail("user@test.com");
-            mapped.setName("John");
-
-            when(mapper.toEntity(request)).thenReturn(mapped);
-            when(repository.save(any(User.class))).thenReturn(saved);
+            when(mapper.toEntity(request)).thenReturn(user);
+            when(repository.save(user)).thenReturn(saved);
             when(mapper.toResponse(saved)).thenReturn(response);
 
-            UserResponse result = service.create(request);
-
+            UserResponse result = service.create(request);  
             assertThat(result.id()).isEqualTo(1L);
+            assertThat(result.name()).isEqualTo("John");
+            assertThat(result.email()).isEqualTo("user@test.com");
             assertThat(result.role()).isEqualTo(UserRole.USER);
 
-            verify(repository).existsByEmail("user@test.com");
-            verify(repository).save(any(User.class));
-            verify(mapper).toResponse(saved);
             verify(mapper).toEntity(request);
+            verify(repository).save(user);
+            verify(mapper).toResponse(saved);
 
         }
 
         @Test
         void shouldFailWhenEmailAlreadyExists() {
             CreateUserRequest request =
-                new CreateUserRequest("user@test.com", "password", "John");
+                new CreateUserRequest("John", "user@test.com", "password");
 
             when(repository.existsByEmail("user@test.com")).thenReturn(true);
 
@@ -127,8 +123,8 @@ class UserServiceImplTest {
 
             UserResponse response = new UserResponse(
                 1L,
-                "user@test.com",
                 "John",
+                "user@test.com",
                 UserRole.USER,
                 OffsetDateTime.now(),
                 OffsetDateTime.now()

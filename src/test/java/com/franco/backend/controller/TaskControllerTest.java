@@ -39,7 +39,7 @@ import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
-import com.franco.backend.service.impl.TaskServiceImpl;
+import com.franco.backend.service.ITaskService;
 
 @Import(GlobalExceptionHandler.class)
 @WebMvcTest(TaskController.class)
@@ -49,7 +49,7 @@ class TaskControllerTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    TaskServiceImpl taskService;
+    ITaskService taskService;
 
     @MockitoBean
     TaskMapper taskMapper;
