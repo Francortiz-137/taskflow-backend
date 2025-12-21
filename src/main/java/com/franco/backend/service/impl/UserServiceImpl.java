@@ -2,9 +2,11 @@ package com.franco.backend.service.impl;
 
 import com.franco.backend.dto.ChangePasswordRequest;
 import com.franco.backend.dto.CreateUserRequest;
+import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
 import com.franco.backend.entity.User;
 import com.franco.backend.entity.UserRole;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.EmailAlreadyExistsException;
 import com.franco.backend.exception.InvalidPasswordException;
 import com.franco.backend.exception.ResourceNotFoundException;
@@ -75,4 +77,30 @@ public class UserServiceImpl implements IUserService {
 
         repository.save(user);
     }
+
+    @Override
+    public UserResponse update(Long id, UpdateUserRequest request) {
+
+        User user = repository.findById(id)
+            .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
+
+        // request vacío
+        if (request.name() == null && request.email() == null) {
+            throw new BadRequestException("validation.emptyUpdate");
+        }
+
+        // no permitir cambio de email
+        if (request.email() != null) {
+            throw new BadRequestException("user.email.updateNotAllowed");
+        }
+
+        // actualizar solo name
+        if (request.name() != null) {
+            user.setName(request.name());
+        }
+
+        User saved = repository.save(user);
+        return mapper.toResponse(saved);
+    }
+
 }

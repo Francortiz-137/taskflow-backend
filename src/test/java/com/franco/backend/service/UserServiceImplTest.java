@@ -13,6 +13,7 @@ import com.franco.backend.config.SecurityConfig;
 import com.franco.backend.dto.ChangePasswordRequest;
 import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.TaskResponse;
+import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
 import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.entity.User;
@@ -262,6 +263,113 @@ class UserServiceImplTest {
             ErrorCode.BAD_REQUEST,
             "user.password.invalid"
         );
+    }
+}
+
+    @Nested
+class UpdateUser {
+
+    @Test
+    void shouldUpdateUserName() {
+        // given
+        UpdateUserRequest request = new UpdateUserRequest("New Name", null);
+
+        User existing = new User();
+        existing.setId(1L);
+        existing.setEmail("user@test.com");
+        existing.setName("Old Name");
+        existing.setRole(UserRole.USER);
+
+        User saved = new User();
+        saved.setId(1L);
+        saved.setEmail("user@test.com");
+        saved.setName("New Name");
+        saved.setRole(UserRole.USER);
+
+        UserResponse response = new UserResponse(
+            1L,
+            "New Name",
+            "user@test.com",
+            UserRole.USER,
+            OffsetDateTime.now().minusDays(1),
+            OffsetDateTime.now()
+        );
+
+        when(repository.findById(1L)).thenReturn(Optional.of(existing));
+        when(repository.save(existing)).thenReturn(saved);
+        when(mapper.toResponse(saved)).thenReturn(response);
+
+        // when
+        UserResponse result = service.update(1L, request);
+
+        // then
+        assertThat(result.name()).isEqualTo("New Name");
+        assertThat(result.email()).isEqualTo("user@test.com");
+        assertThat(result.role()).isEqualTo(UserRole.USER);
+
+        verify(repository).findById(1L);
+        verify(repository).save(existing);
+        verify(mapper).toResponse(saved);
+    }
+
+    @Test
+    void shouldThrowWhenUserDoesNotExist() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertApiException(
+            () -> service.update(99L, new UpdateUserRequest("Name",null)),
+            HttpStatus.NOT_FOUND,
+            ErrorCode.NOT_FOUND,
+            "user.notFound"
+        );
+
+        verify(repository).findById(99L);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void shouldThrowWhenRequestIsEmpty() {
+        User user = new User();
+        user.setId(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertApiException(
+            () -> service.update(1L, new UpdateUserRequest(null, null)),
+            HttpStatus.BAD_REQUEST,
+            ErrorCode.BAD_REQUEST,
+            "validation.emptyUpdate"
+        );
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void shouldNotAllowEmailUpdate() {
+        UpdateUserRequest request = new UpdateUserRequest(
+            "New Name",
+            "new@email.com" // intento malicioso
+        );
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("user@test.com");
+        user.setName("Old Name");
+
+        when(repository.findById(1L)).thenReturn(Optional.of(user));
+
+        assertApiException(
+            () -> service.update(1L, request),
+            HttpStatus.BAD_REQUEST,
+            ErrorCode.BAD_REQUEST,
+            "user.email.updateNotAllowed"
+        );
+
+        verify(repository).findById(1L);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(mapper);
     }
 }
 
