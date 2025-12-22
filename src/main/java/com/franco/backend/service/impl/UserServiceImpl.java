@@ -12,6 +12,7 @@ import com.franco.backend.exception.InvalidPasswordException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.UserMapper;
 import com.franco.backend.repository.UserRepository;
+import com.franco.backend.security.PasswordService;
 import com.franco.backend.service.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class UserServiceImpl implements IUserService {
 
     private final UserRepository repository;
     private final UserMapper mapper;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordService passwordService;
 
     @Override
     public UserResponse create(CreateUserRequest request) {
@@ -37,7 +38,7 @@ public class UserServiceImpl implements IUserService {
 
         User user = mapper.toEntity(request);
 
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setPasswordHash(passwordService.hash(request.password()));
         user.setRole(UserRole.USER);
 
         return mapper.toResponse(repository.save(user));
@@ -65,14 +66,14 @@ public class UserServiceImpl implements IUserService {
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 
-        if (!passwordEncoder.matches(
+        if (!passwordService.matches(
                 request.currentPassword(),
                 user.getPasswordHash())
         ) {
             throw new InvalidPasswordException();
         }
 
-        String newHash = passwordEncoder.encode(request.newPassword());
+        String newHash = passwordService.hash(request.newPassword());
         user.setPasswordHash(newHash);
 
         repository.save(user);
@@ -84,17 +85,14 @@ public class UserServiceImpl implements IUserService {
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 
-        // request vacío
         if (request.name() == null && request.email() == null) {
             throw new BadRequestException("validation.emptyUpdate");
         }
 
-        // no permitir cambio de email
         if (request.email() != null) {
             throw new BadRequestException("user.email.updateNotAllowed");
         }
 
-        // actualizar solo name
         if (request.name() != null) {
             user.setName(request.name());
         }

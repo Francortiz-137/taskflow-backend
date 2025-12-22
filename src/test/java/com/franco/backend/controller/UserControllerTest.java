@@ -20,6 +20,7 @@ import com.franco.backend.exception.EmailAlreadyExistsException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.service.IUserService;
 import com.franco.backend.config.SecurityConfig;
+import com.franco.backend.exception.BadRequestException;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -205,4 +206,97 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
         }
     }
+
+    // =========================
+// PUT /api/users/{id}
+// =========================
+    @Nested
+    class UpdateUser {
+
+        @Test
+        void shouldUpdateUserName() throws Exception {
+            UserResponse response = new UserResponse(
+                1L,
+                "New Name",
+                "user@test.com",
+                UserRole.USER,
+                now,
+                now
+            );
+
+            when(userService.update(eq(1L), any()))
+                .thenReturn(response);
+
+            mockMvc.perform(put("/api/users/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "name": "New Name"
+                        }
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("New Name"))
+                .andExpect(jsonPath("$.email").value("user@test.com"));
+        }
+
+        @Test
+        void shouldFailWhenUserNotFound() throws Exception {
+            when(userService.update(eq(99L), any()))
+                .thenThrow(ResourceNotFoundException.userNotFound(99L));
+
+            mockMvc.perform(put("/api/users/99")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "name": "New Name"
+                        }
+                    """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+        }
+
+        @Test
+        void shouldFailWhenIdIsInvalid() throws Exception {
+            mockMvc.perform(put("/api/users/0")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "name": "New Name"
+                        }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        void shouldFailWhenBodyIsEmpty() throws Exception {
+            when(userService.update(eq(1L), any()))
+                .thenThrow(new BadRequestException("validation.emptyUpdate"));
+
+            mockMvc.perform(put("/api/users/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        void shouldFailWhenTryingToUpdateEmail() throws Exception {
+            when(userService.update(eq(1L), any()))
+                .thenThrow(new BadRequestException("user.email.updateNotAllowed"));
+
+            mockMvc.perform(put("/api/users/1")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "email": "new@test.com"
+                        }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+    }
+
+
 }

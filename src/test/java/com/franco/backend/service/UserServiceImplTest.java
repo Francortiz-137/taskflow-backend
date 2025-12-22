@@ -1,6 +1,7 @@
 package com.franco.backend.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 
@@ -21,6 +22,7 @@ import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.ErrorCode;
 import com.franco.backend.mapper.UserMapper;
 import com.franco.backend.repository.UserRepository;
+import com.franco.backend.security.PasswordService;
 import com.franco.backend.service.impl.UserServiceImpl;
 
 import org.junit.jupiter.api.Nested;
@@ -31,7 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static com.franco.backend.testutil.ApiExceptionAssertions.assertApiException;
 
@@ -49,7 +50,7 @@ class UserServiceImplTest {
     UserServiceImpl service;
 
     @Mock
-    PasswordEncoder passwordEncoder;
+    PasswordService passwordService;
 
 
     @Nested
@@ -85,7 +86,7 @@ class UserServiceImplTest {
             when(mapper.toEntity(request)).thenReturn(user);
             when(repository.save(user)).thenReturn(saved);
             when(mapper.toResponse(saved)).thenReturn(response);
-            when(passwordEncoder.encode("password")).thenReturn("NEW_HASH");
+            when(passwordService.hash("password")).thenReturn("NEW_HASH");
 
 
             UserResponse result = service.create(request);  
@@ -223,8 +224,8 @@ class UserServiceImplTest {
         user.setPasswordHash("$2a$10$OLD_HASH");
 
         when(repository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(any(), any())).thenReturn(true);
-        when(passwordEncoder.encode(any())).thenReturn("NEW_HASH");
+        when(passwordService.matches(any(), any())).thenReturn(true);
+        when(passwordService.hash(any())).thenReturn("NEW_HASH");
 
 
         service.changePassword(1L, request);
@@ -254,7 +255,7 @@ class UserServiceImplTest {
         user.setPasswordHash("$2a$10$HASH");
 
         when(repository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(any(), any())).thenReturn(false);
+        when(passwordService.matches(any(), any())).thenReturn(false);
 
         assertApiException(
             () -> service.changePassword(1L,
@@ -267,110 +268,148 @@ class UserServiceImplTest {
 }
 
     @Nested
-class UpdateUser {
+    class UpdateUser {
 
-    @Test
-    void shouldUpdateUserName() {
-        // given
-        UpdateUserRequest request = new UpdateUserRequest("New Name", null);
+        @Test
+        void shouldUpdateUserName() {
+            // given
+            UpdateUserRequest request = new UpdateUserRequest("New Name", null);
 
-        User existing = new User();
-        existing.setId(1L);
-        existing.setEmail("user@test.com");
-        existing.setName("Old Name");
-        existing.setRole(UserRole.USER);
+            User existing = new User();
+            existing.setId(1L);
+            existing.setEmail("user@test.com");
+            existing.setName("Old Name");
+            existing.setRole(UserRole.USER);
 
-        User saved = new User();
-        saved.setId(1L);
-        saved.setEmail("user@test.com");
-        saved.setName("New Name");
-        saved.setRole(UserRole.USER);
+            User saved = new User();
+            saved.setId(1L);
+            saved.setEmail("user@test.com");
+            saved.setName("New Name");
+            saved.setRole(UserRole.USER);
 
-        UserResponse response = new UserResponse(
-            1L,
-            "New Name",
-            "user@test.com",
-            UserRole.USER,
-            OffsetDateTime.now().minusDays(1),
-            OffsetDateTime.now()
-        );
+            UserResponse response = new UserResponse(
+                1L,
+                "New Name",
+                "user@test.com",
+                UserRole.USER,
+                OffsetDateTime.now().minusDays(1),
+                OffsetDateTime.now()
+            );
 
-        when(repository.findById(1L)).thenReturn(Optional.of(existing));
-        when(repository.save(existing)).thenReturn(saved);
-        when(mapper.toResponse(saved)).thenReturn(response);
+            when(repository.findById(1L)).thenReturn(Optional.of(existing));
+            when(repository.save(existing)).thenReturn(saved);
+            when(mapper.toResponse(saved)).thenReturn(response);
 
-        // when
-        UserResponse result = service.update(1L, request);
+            // when
+            UserResponse result = service.update(1L, request);
 
-        // then
-        assertThat(result.name()).isEqualTo("New Name");
-        assertThat(result.email()).isEqualTo("user@test.com");
-        assertThat(result.role()).isEqualTo(UserRole.USER);
+            // then
+            assertThat(result.name()).isEqualTo("New Name");
+            assertThat(result.email()).isEqualTo("user@test.com");
+            assertThat(result.role()).isEqualTo(UserRole.USER);
 
-        verify(repository).findById(1L);
-        verify(repository).save(existing);
-        verify(mapper).toResponse(saved);
+            verify(repository).findById(1L);
+            verify(repository).save(existing);
+            verify(mapper).toResponse(saved);
+        }
+
+        @Test
+        void shouldThrowWhenUserDoesNotExist() {
+            when(repository.findById(99L)).thenReturn(Optional.empty());
+
+            assertApiException(
+                () -> service.update(99L, new UpdateUserRequest("Name",null)),
+                HttpStatus.NOT_FOUND,
+                ErrorCode.NOT_FOUND,
+                "user.notFound"
+            );
+
+            verify(repository).findById(99L);
+            verifyNoInteractions(mapper);
+        }
+
+        @Test
+        void shouldThrowWhenRequestIsEmpty() {
+            User user = new User();
+            user.setId(1L);
+
+            when(repository.findById(1L)).thenReturn(Optional.of(user));
+
+            assertApiException(
+                () -> service.update(1L, new UpdateUserRequest(null, null)),
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.BAD_REQUEST,
+                "validation.emptyUpdate"
+            );
+
+            verify(repository).findById(1L);
+            verifyNoMoreInteractions(repository);
+            verifyNoInteractions(mapper);
+        }
+
+        @Test
+        void shouldNotAllowEmailUpdate() {
+            UpdateUserRequest request = new UpdateUserRequest(
+                "New Name",
+                "new@email.com" // intento malicioso
+            );
+
+            User user = new User();
+            user.setId(1L);
+            user.setEmail("user@test.com");
+            user.setName("Old Name");
+
+            when(repository.findById(1L)).thenReturn(Optional.of(user));
+
+            assertApiException(
+                () -> service.update(1L, request),
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.BAD_REQUEST,
+                "user.email.updateNotAllowed"
+            );
+
+            verify(repository).findById(1L);
+            verifyNoMoreInteractions(repository);
+            verifyNoInteractions(mapper);
+        }
     }
 
-    @Test
-    void shouldThrowWhenUserDoesNotExist() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
+    @Nested
+    class UpdatePassword {
+        @Test
+        void shouldHashPasswordWhenCreatingUser() {
+            CreateUserRequest request = new CreateUserRequest(
+                "John",
+                "user@test.com",
+                "password123"
+            );
 
-        assertApiException(
-            () -> service.update(99L, new UpdateUserRequest("Name",null)),
-            HttpStatus.NOT_FOUND,
-            ErrorCode.NOT_FOUND,
-            "user.notFound"
-        );
+            User user = new User();
+            user.setEmail("user@test.com");
+            user.setName("John");
 
-        verify(repository).findById(99L);
-        verifyNoInteractions(mapper);
+            User saved = new User();
+            saved.setId(1L);
+            saved.setEmail("user@test.com");
+            saved.setName("John");
+            saved.setRole(UserRole.USER);
+
+            when(repository.existsByEmail("user@test.com")).thenReturn(false);
+            when(mapper.toEntity(request)).thenReturn(user);
+            when(repository.save(any(User.class))).thenReturn(saved);
+            when(mapper.toResponse(saved)).thenReturn(
+                new UserResponse(1L, "John", "user@test.com", UserRole.USER, null, null)
+            );
+
+            // 👇 mock del encoder
+            when(passwordService.hash("password123")).thenReturn("HASHED");
+
+            service.create(request);
+
+            verify(passwordService).hash("password123");
+            verify(repository).save(argThat(u ->
+                "HASHED".equals(u.getPasswordHash())
+            ));
+        }
     }
-
-    @Test
-    void shouldThrowWhenRequestIsEmpty() {
-        User user = new User();
-        user.setId(1L);
-
-        when(repository.findById(1L)).thenReturn(Optional.of(user));
-
-        assertApiException(
-            () -> service.update(1L, new UpdateUserRequest(null, null)),
-            HttpStatus.BAD_REQUEST,
-            ErrorCode.BAD_REQUEST,
-            "validation.emptyUpdate"
-        );
-
-        verify(repository).findById(1L);
-        verifyNoMoreInteractions(repository);
-        verifyNoInteractions(mapper);
-    }
-
-    @Test
-    void shouldNotAllowEmailUpdate() {
-        UpdateUserRequest request = new UpdateUserRequest(
-            "New Name",
-            "new@email.com" // intento malicioso
-        );
-
-        User user = new User();
-        user.setId(1L);
-        user.setEmail("user@test.com");
-        user.setName("Old Name");
-
-        when(repository.findById(1L)).thenReturn(Optional.of(user));
-
-        assertApiException(
-            () -> service.update(1L, request),
-            HttpStatus.BAD_REQUEST,
-            ErrorCode.BAD_REQUEST,
-            "user.email.updateNotAllowed"
-        );
-
-        verify(repository).findById(1L);
-        verifyNoMoreInteractions(repository);
-        verifyNoInteractions(mapper);
-    }
-}
-
 }

@@ -1,6 +1,7 @@
 package com.franco.backend.controller;
 
 import com.franco.backend.dto.CreateUserRequest;
+import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
 import com.franco.backend.service.IUserService;
 
@@ -63,4 +64,23 @@ public class UserController {
     public List<UserResponse> findAll() {
         return userService.findAll();
     }
+
+    // =========================
+    // PUT /api/users/{id}
+    // =========================
+    @PutMapping(
+        value = "/{id}",
+        consumes = MediaType.APPLICATION_JSON_VALUE,
+        produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public UserResponse update(
+            @PathVariable
+            @Positive(message = "{validation.id.positive}")
+            Long id,
+
+            @RequestBody @Valid UpdateUserRequest request
+    ) {
+        return userService.update(id, request);
+    }
+
 }
