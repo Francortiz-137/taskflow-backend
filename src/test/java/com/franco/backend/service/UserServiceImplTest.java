@@ -323,24 +323,6 @@ class UserServiceImplTest {
             verifyNoInteractions(mapper);
         }
 
-        @Test
-        void shouldThrowWhenRequestIsEmpty() {
-            User user = new User();
-            user.setId(1L);
-
-            when(repository.findById(1L)).thenReturn(Optional.of(user));
-
-            assertApiException(
-                () -> service.update(1L, new UpdateUserRequest(null)),
-                HttpStatus.BAD_REQUEST,
-                ErrorCode.BAD_REQUEST,
-                "validation.emptyUpdate"
-            );
-
-            verify(repository).findById(1L);
-            verify(repository, never()).save(any());
-            verifyNoInteractions(mapper);
-        }
     }
 
     @Nested

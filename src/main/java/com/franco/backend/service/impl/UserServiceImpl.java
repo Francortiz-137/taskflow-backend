@@ -100,17 +100,12 @@ public class UserServiceImpl implements IUserService {
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 
-        if (request.name() == null) {
-            throw new BadRequestException("validation.emptyUpdate");
-        }
         // Idempotent update
         if (request.name().equals(user.getName())) {
             return mapper.toResponse(user); // no save 
         }
 
-
         user.setName(request.name());
-
         return mapper.toResponse(repository.save(user));
     }
 
