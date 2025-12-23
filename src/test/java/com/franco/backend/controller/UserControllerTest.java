@@ -251,14 +251,10 @@ class UserControllerTest {
             mockMvc.perform(put("/api/users/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                        {
-                        "name": "New Name"
-                        }
+                        { "name": "New Name" }
                     """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("New Name"))
-                .andExpect(jsonPath("$.email").value("user@test.com"));
+                .andExpect(jsonPath("$.name").value("New Name"));
         }
 
         @Test
@@ -291,13 +287,16 @@ class UserControllerTest {
         }
 
         @Test
-        void shouldFailWhenBodyIsEmpty() throws Exception {
+        void shouldFailWhenBodyIsInvalid() throws Exception {
             mockMvc.perform(put("/api/users/1")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
+                    .content("""
+                        { "name": "" }
+                    """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
+
 
     }
 

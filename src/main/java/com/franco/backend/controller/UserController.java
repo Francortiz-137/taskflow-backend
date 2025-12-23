@@ -79,11 +79,10 @@ public class UserController {
             @Positive(message = "{validation.id.positive}")
             Long id,
 
-            @RequestBody @Valid UpdateUserRequest request
+            @RequestBody 
+            @Valid 
+            UpdateUserRequest request
     ) {
-        if (request.name() == null) {
-            throw new BadRequestException("validation.emptyUpdate");
-        }
         return userService.update(id, request);
     }
 
