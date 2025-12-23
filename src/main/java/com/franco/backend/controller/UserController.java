@@ -1,9 +1,9 @@
 package com.franco.backend.controller;
 
-import com.franco.backend.dto.ChangePasswordRequest;
-import com.franco.backend.dto.CreateUserRequest;
-import com.franco.backend.dto.UpdateUserRequest;
-import com.franco.backend.dto.UserResponse;
+import com.franco.backend.dto.user.ChangePasswordRequest;
+import com.franco.backend.dto.user.CreateUserRequest;
+import com.franco.backend.dto.user.UpdateUserRequest;
+import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.service.IUserService;
 

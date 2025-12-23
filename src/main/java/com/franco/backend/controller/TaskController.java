@@ -1,12 +1,12 @@
 package com.franco.backend.controller;
 
 import com.franco.backend.config.SwaggerExamples;
-import com.franco.backend.dto.ApiErrorResponse;
-import com.franco.backend.dto.CreateTaskRequest;
-import com.franco.backend.dto.PageResponse;
-import com.franco.backend.dto.TaskResponse;
-import com.franco.backend.dto.UpdateTaskRequest;
-import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.dto.common.ApiErrorResponse;
+import com.franco.backend.dto.common.PageResponse;
+import com.franco.backend.dto.task.CreateTaskRequest;
+import com.franco.backend.dto.task.TaskResponse;
+import com.franco.backend.dto.task.UpdateTaskRequest;
+import com.franco.backend.dto.task.UpdateTaskStatusRequest;
 import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.service.ITaskService;
 import jakarta.validation.Valid;

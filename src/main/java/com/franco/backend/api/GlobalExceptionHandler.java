@@ -2,7 +2,7 @@ package com.franco.backend.api;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-import com.franco.backend.dto.ApiErrorResponse;
+import com.franco.backend.dto.common.ApiErrorResponse;
 import com.franco.backend.exception.ApiException;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ErrorCode;

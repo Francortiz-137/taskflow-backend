@@ -28,10 +28,10 @@ import static com.franco.backend.testutil.ApiExceptionAssertions.assertApiExcept
 
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.SecurityConfig;
-import com.franco.backend.dto.CreateTaskRequest;
-import com.franco.backend.dto.TaskResponse;
-import com.franco.backend.dto.UpdateTaskRequest;
-import com.franco.backend.dto.UpdateTaskStatusRequest;
+import com.franco.backend.dto.task.CreateTaskRequest;
+import com.franco.backend.dto.task.TaskResponse;
+import com.franco.backend.dto.task.UpdateTaskRequest;
+import com.franco.backend.dto.task.UpdateTaskStatusRequest;
 import com.franco.backend.entity.Task;
 import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.mapper.TaskMapper;

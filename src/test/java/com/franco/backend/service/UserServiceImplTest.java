@@ -9,10 +9,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.franco.backend.dto.ChangePasswordRequest;
-import com.franco.backend.dto.CreateUserRequest;
-import com.franco.backend.dto.UpdateUserRequest;
-import com.franco.backend.dto.UserResponse;
+import com.franco.backend.dto.user.ChangePasswordRequest;
+import com.franco.backend.dto.user.CreateUserRequest;
+import com.franco.backend.dto.user.UpdateUserRequest;
+import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.User;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.ErrorCode;

@@ -1,7 +1,7 @@
 package com.franco.backend.mapper;
 
-import com.franco.backend.dto.CreateUserRequest;
-import com.franco.backend.dto.UserResponse;
+import com.franco.backend.dto.user.CreateUserRequest;
+import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.User;
 
 import org.mapstruct.Mapper;
