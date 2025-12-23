@@ -2,6 +2,8 @@ package com.franco.backend.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -18,6 +20,7 @@ import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.EmailAlreadyExistsException;
+import com.franco.backend.exception.InvalidPasswordException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.service.IUserService;
 import com.franco.backend.config.SecurityConfig;
@@ -301,4 +304,66 @@ class UserControllerTest {
     }
 
 
+    // =========================
+    // PUT /api/users/{id}/password
+    // =========================
+    @Nested
+    class ChangePassword {
+        @Test
+        void shouldChangePasswordSuccessfully() throws Exception {
+            doNothing().when(userService).changePassword(eq(1L), any());
+
+            mockMvc.perform(put("/api/users/1/password")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "currentPassword": "oldPass",
+                        "newPassword": "newStrongPass"
+                        }
+                    """))
+                .andExpect(status().isNoContent());
+        }
+
+        @Test
+        void shouldFailWhenCurrentPasswordIsInvalid() throws Exception {
+            doThrow(new InvalidPasswordException())
+                .when(userService).changePassword(eq(1L), any());
+
+            mockMvc.perform(put("/api/users/1/password")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "currentPassword": "wrong",
+                        "newPassword": "newStrongPass"
+                        }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("BAD_REQUEST"));
+        }
+
+        @Test
+        void shouldFailWhenBodyIsInvalid() throws Exception {
+            mockMvc.perform(put("/api/users/1/password")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        { "currentPassword": "", "newPassword": "" }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
+        @Test
+        void shouldFailWhenIdIsInvalid() throws Exception {
+            mockMvc.perform(put("/api/users/0/password")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "currentPassword": "old",
+                        "newPassword": "newStrongPass"
+                        }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+    }
 }

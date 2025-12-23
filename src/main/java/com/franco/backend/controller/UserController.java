@@ -1,5 +1,6 @@
 package com.franco.backend.controller;
 
+import com.franco.backend.dto.ChangePasswordRequest;
 import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
@@ -85,5 +86,24 @@ public class UserController {
     ) {
         return userService.update(id, request);
     }
+
+    // =========================
+    // PUT /api/users/{id}/password
+    // =========================
+
+    @PutMapping("/{id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(
+            @PathVariable
+            @Positive(message = "{validation.id.positive}")
+            Long id,
+
+            @RequestBody
+            @Valid
+            ChangePasswordRequest request
+    ) {
+        userService.changePassword(id, request);
+    }
+
 
 }
