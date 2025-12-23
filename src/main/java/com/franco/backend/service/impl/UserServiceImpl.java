@@ -84,8 +84,8 @@ public class UserServiceImpl implements IUserService {
         String newHash = passwordService.hash(request.newPassword());
 
         // Idempotent update - check if the new password hash is the same as the current one
-        if (newHash.equals(user.getPasswordHash())) {
-            throw new BadRequestException("user.password.sameAsCurrent");
+        if (passwordService.matches(request.newPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("user.password.invalid");
         }
 
         // Update password hash

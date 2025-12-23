@@ -215,8 +215,14 @@ class UserServiceImplTest {
             user.setPasswordHash("$2a$10$OLD_HASH");
 
             when(repository.findById(1L)).thenReturn(Optional.of(user));
-            when(passwordService.matches(any(), any())).thenReturn(true);
-            when(passwordService.hash(any())).thenReturn("NEW_HASH");
+            when(passwordService.matches("oldPass", "$2a$10$OLD_HASH"))
+                    .thenReturn(true);
+
+            when(passwordService.matches("newSecurePass", "$2a$10$OLD_HASH"))
+                    .thenReturn(false);
+
+            when(passwordService.hash("newSecurePass"))
+                    .thenReturn("NEW_HASH");
 
             service.changePassword(1L, request);
 
