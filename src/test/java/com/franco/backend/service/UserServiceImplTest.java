@@ -9,14 +9,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.franco.backend.api.GlobalExceptionHandler;
-import com.franco.backend.config.SecurityConfig;
 import com.franco.backend.dto.ChangePasswordRequest;
 import com.franco.backend.dto.CreateUserRequest;
-import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
-import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.entity.User;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.ErrorCode;
@@ -31,13 +27,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 
 import static com.franco.backend.testutil.ApiExceptionAssertions.assertApiException;
 
 @ExtendWith(MockitoExtension.class)
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class UserServiceImplTest {
 
     @Mock
@@ -51,7 +45,6 @@ class UserServiceImplTest {
 
     @Mock
     PasswordService passwordService;
-
 
     @Nested
     class CreateUser {
@@ -88,17 +81,18 @@ class UserServiceImplTest {
             when(mapper.toResponse(saved)).thenReturn(response);
             when(passwordService.hash("password")).thenReturn("NEW_HASH");
 
+            UserResponse result = service.create(request);
 
-            UserResponse result = service.create(request);  
             assertThat(result.id()).isEqualTo(1L);
             assertThat(result.name()).isEqualTo("John");
             assertThat(result.email()).isEqualTo("user@test.com");
             assertThat(result.role()).isEqualTo(UserRole.USER);
+            assertThat(user.getPasswordHash()).isEqualTo("NEW_HASH");
 
             verify(mapper).toEntity(request);
             verify(repository).save(user);
             verify(mapper).toResponse(saved);
-
+            verify(passwordService).hash("password");
         }
 
         @Test
@@ -115,12 +109,10 @@ class UserServiceImplTest {
                 "user.email.exists"
             );
 
-
             verify(repository).existsByEmail("user@test.com");
             verifyNoMoreInteractions(repository);
             verifyNoInteractions(mapper);
         }
-
     }
 
     @Nested
@@ -150,12 +142,10 @@ class UserServiceImplTest {
 
             assertThat(result.id()).isEqualTo(1L);
             assertThat(result.email()).isEqualTo("user@test.com");
-            assertThat(result.id()).isEqualTo(1L);
             assertThat(result.role()).isEqualTo(UserRole.USER);
 
             verify(repository).findById(1L);
             verify(mapper).toResponse(user);
-
         }
 
         @Test
@@ -197,6 +187,7 @@ class UserServiceImplTest {
 
             assertThat(result).hasSize(2);
             verify(repository).findAll();
+            verify(mapper, times(2)).toResponse(any());
         }
 
         @Test
@@ -214,66 +205,72 @@ class UserServiceImplTest {
     @Nested
     class ChangePassword {
 
-    @Test
-    void shouldChangePasswordSuccessfully() {
-        ChangePasswordRequest request =
-            new ChangePasswordRequest("oldPass", "newSecurePass");
+        @Test
+        void shouldChangePasswordSuccessfully() {
+            ChangePasswordRequest request =
+                new ChangePasswordRequest("oldPass", "newSecurePass");
 
-        User user = new User();
-        user.setId(1L);
-        user.setPasswordHash("$2a$10$OLD_HASH");
+            User user = new User();
+            user.setId(1L);
+            user.setPasswordHash("$2a$10$OLD_HASH");
 
-        when(repository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordService.matches(any(), any())).thenReturn(true);
-        when(passwordService.hash(any())).thenReturn("NEW_HASH");
+            when(repository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordService.matches(any(), any())).thenReturn(true);
+            when(passwordService.hash(any())).thenReturn("NEW_HASH");
 
+            service.changePassword(1L, request);
 
-        service.changePassword(1L, request);
+            verify(passwordService).matches("oldPass", "$2a$10$OLD_HASH");
+            verify(passwordService).hash("newSecurePass");
+            verify(repository).save(user);
 
-        verify(repository).save(user);
-        assertThat(user.getPasswordHash())
-            .isNotEqualTo("newSecurePass");
+            assertThat(user.getPasswordHash()).isEqualTo("NEW_HASH");
+            assertThat(user.getPasswordHash()).isNotEqualTo("newSecurePass");
+        }
+
+        @Test
+        void shouldFailWhenUserDoesNotExist() {
+            when(repository.findById(99L)).thenReturn(Optional.empty());
+
+            assertApiException(
+                () -> service.changePassword(
+                    99L, new ChangePasswordRequest("old", "new")
+                ),
+                HttpStatus.NOT_FOUND,
+                ErrorCode.NOT_FOUND,
+                "user.notFound"
+            );
+        }
+
+        @Test
+        void shouldFailWhenCurrentPasswordIsIncorrect() {
+            User user = new User();
+            user.setId(1L);
+            user.setPasswordHash("$2a$10$HASH");
+
+            when(repository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordService.matches(any(), any())).thenReturn(false);
+
+            assertApiException(
+                () -> service.changePassword(
+                    1L, new ChangePasswordRequest("wrong", "new")
+                ),
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.BAD_REQUEST,
+                "user.password.invalid"
+            );
+
+            verify(repository, never()).save(any());
+            verify(passwordService, never()).hash(any());
+        }
     }
-
-    @Test
-    void shouldFailWhenUserDoesNotExist() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
-
-        assertApiException(
-            () -> service.changePassword(99L,
-                new ChangePasswordRequest("old", "new")),
-            HttpStatus.NOT_FOUND,
-            ErrorCode.NOT_FOUND,
-            "user.notFound"
-        );
-    }
-
-    @Test
-    void shouldFailWhenCurrentPasswordIsIncorrect() {
-        User user = new User();
-        user.setId(1L);
-        user.setPasswordHash("$2a$10$HASH");
-
-        when(repository.findById(1L)).thenReturn(Optional.of(user));
-        when(passwordService.matches(any(), any())).thenReturn(false);
-
-        assertApiException(
-            () -> service.changePassword(1L,
-                new ChangePasswordRequest("wrong", "new")),
-            HttpStatus.BAD_REQUEST,
-            ErrorCode.BAD_REQUEST,
-            "user.password.invalid"
-        );
-    }
-}
 
     @Nested
     class UpdateUser {
 
         @Test
         void shouldUpdateUserName() {
-            // given
-            UpdateUserRequest request = new UpdateUserRequest("New Name", null);
+            UpdateUserRequest request = new UpdateUserRequest("New Name");
 
             User existing = new User();
             existing.setId(1L);
@@ -300,10 +297,8 @@ class UserServiceImplTest {
             when(repository.save(existing)).thenReturn(saved);
             when(mapper.toResponse(saved)).thenReturn(response);
 
-            // when
             UserResponse result = service.update(1L, request);
 
-            // then
             assertThat(result.name()).isEqualTo("New Name");
             assertThat(result.email()).isEqualTo("user@test.com");
             assertThat(result.role()).isEqualTo(UserRole.USER);
@@ -318,7 +313,7 @@ class UserServiceImplTest {
             when(repository.findById(99L)).thenReturn(Optional.empty());
 
             assertApiException(
-                () -> service.update(99L, new UpdateUserRequest("Name",null)),
+                () -> service.update(99L, new UpdateUserRequest("Name")),
                 HttpStatus.NOT_FOUND,
                 ErrorCode.NOT_FOUND,
                 "user.notFound"
@@ -336,46 +331,21 @@ class UserServiceImplTest {
             when(repository.findById(1L)).thenReturn(Optional.of(user));
 
             assertApiException(
-                () -> service.update(1L, new UpdateUserRequest(null, null)),
+                () -> service.update(1L, new UpdateUserRequest(null)),
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.BAD_REQUEST,
                 "validation.emptyUpdate"
             );
 
             verify(repository).findById(1L);
-            verifyNoMoreInteractions(repository);
-            verifyNoInteractions(mapper);
-        }
-
-        @Test
-        void shouldNotAllowEmailUpdate() {
-            UpdateUserRequest request = new UpdateUserRequest(
-                "New Name",
-                "new@email.com" // intento malicioso
-            );
-
-            User user = new User();
-            user.setId(1L);
-            user.setEmail("user@test.com");
-            user.setName("Old Name");
-
-            when(repository.findById(1L)).thenReturn(Optional.of(user));
-
-            assertApiException(
-                () -> service.update(1L, request),
-                HttpStatus.BAD_REQUEST,
-                ErrorCode.BAD_REQUEST,
-                "user.email.updateNotAllowed"
-            );
-
-            verify(repository).findById(1L);
-            verifyNoMoreInteractions(repository);
+            verify(repository, never()).save(any());
             verifyNoInteractions(mapper);
         }
     }
 
     @Nested
     class UpdatePassword {
+
         @Test
         void shouldHashPasswordWhenCreatingUser() {
             CreateUserRequest request = new CreateUserRequest(
@@ -401,7 +371,6 @@ class UserServiceImplTest {
                 new UserResponse(1L, "John", "user@test.com", UserRole.USER, null, null)
             );
 
-            // 👇 mock del encoder
             when(passwordService.hash("password123")).thenReturn("HASHED");
 
             service.create(request);

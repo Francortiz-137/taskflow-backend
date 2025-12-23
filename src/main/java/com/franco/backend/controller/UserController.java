@@ -3,6 +3,7 @@ package com.franco.backend.controller;
 import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.UpdateUserRequest;
 import com.franco.backend.dto.UserResponse;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.service.IUserService;
 
 import jakarta.validation.Valid;
@@ -80,6 +81,9 @@ public class UserController {
 
             @RequestBody @Valid UpdateUserRequest request
     ) {
+        if (request.name() == null) {
+            throw new BadRequestException("validation.emptyUpdate");
+        }
         return userService.update(id, request);
     }
 

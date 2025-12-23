@@ -13,6 +13,7 @@ import java.util.List;
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
 import com.franco.backend.config.I18nConfig;
+import com.franco.backend.config.JacksonConfig;
 import com.franco.backend.dto.CreateUserRequest;
 import com.franco.backend.dto.UserResponse;
 import com.franco.backend.entity.UserRole;
@@ -33,12 +34,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(UserController.class)
 @Import({
     GlobalExceptionHandler.class,
     I18nConfig.class,
-    SecurityConfig.class
+    JacksonConfig.class
 })
 class UserControllerTest {
 
@@ -89,7 +90,9 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("user@test.com"))
                 .andExpect(jsonPath("$.name").value("John"))
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.role").value("USER"))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
         }
 
         @Test
@@ -125,6 +128,23 @@ class UserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
+
+        @Test
+        void shouldFailWhenUnknownFieldIsSent() throws Exception {
+            mockMvc.perform(post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "name": "John",
+                        "email": "user@test.com",
+                        "password": "password",
+                        "role": "ADMIN"
+                        }
+                    """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
+        }
+
     }
 
     // =========================
@@ -149,10 +169,11 @@ class UserControllerTest {
             mockMvc.perform(get("/api/users/1")
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(print())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.email").value("user@test.com"))
-                .andExpect(jsonPath("$.name").value("John"));
+                .andExpect(jsonPath("$.name").value("John"))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists());
         }
 
         @Test
@@ -271,9 +292,6 @@ class UserControllerTest {
 
         @Test
         void shouldFailWhenBodyIsEmpty() throws Exception {
-            when(userService.update(eq(1L), any()))
-                .thenThrow(new BadRequestException("validation.emptyUpdate"));
-
             mockMvc.perform(put("/api/users/1")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"))
@@ -281,21 +299,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
 
-        @Test
-        void shouldFailWhenTryingToUpdateEmail() throws Exception {
-            when(userService.update(eq(1L), any()))
-                .thenThrow(new BadRequestException("user.email.updateNotAllowed"));
-
-            mockMvc.perform(put("/api/users/1")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""
-                        {
-                        "email": "new@test.com"
-                        }
-                    """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
-        }
     }
 
 

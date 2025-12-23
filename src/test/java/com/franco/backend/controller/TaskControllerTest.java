@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -32,7 +33,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
-import com.franco.backend.config.SecurityConfig;
+import com.franco.backend.config.I18nConfig;
+import com.franco.backend.config.JacksonConfig;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
@@ -42,7 +44,12 @@ import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.service.ITaskService;
 
-@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+
+@AutoConfigureMockMvc(addFilters = false)
+@Import({GlobalExceptionHandler.class, 
+        I18nConfig.class, 
+        JacksonConfig.class
+})
 @WebMvcTest(TaskController.class)
 class TaskControllerTest {
 
@@ -265,7 +272,7 @@ class TaskControllerTest {
         mockMvc.perform(get("/api/tasks")
                 .param("sort", "title,invalid"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"))
                 .andExpect(jsonPath("$.message").value("Invalid sort direction: invalid"));
         }
 

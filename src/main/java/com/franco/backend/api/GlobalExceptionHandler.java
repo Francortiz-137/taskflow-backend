@@ -1,8 +1,10 @@
 package com.franco.backend.api;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.franco.backend.dto.ApiErrorResponse;
 import com.franco.backend.exception.ApiException;
+import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -14,14 +16,19 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 
+import lombok.extern.slf4j.Slf4j;
+
+
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -95,7 +102,6 @@ public class GlobalExceptionHandler {
         String message = ex.getConstraintViolations()
                 .stream()
                 .map(v -> {
-                    // si quieres incluir el campo: v.getPropertyPath() + ": " + v.getMessage()
                     return v.getMessage();
                 })
                 .findFirst()
@@ -116,31 +122,72 @@ public class GlobalExceptionHandler {
     // JSON parse errors / Enum inválido
     // =========================
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex,
-            HttpServletRequest request
-    ) {
-        String message = "Invalid request body";
-
+        public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(
+                HttpMessageNotReadableException ex,
+                HttpServletRequest request
+        ) {
         Throwable cause = ex.getCause();
-        if (cause instanceof InvalidFormatException ife) {
-            // Caso enum inválido
-            if (ife.getTargetType() != null && ife.getTargetType().isEnum()) {
-                String fieldName = Optional.ofNullable(ife.getPath())
-                        .flatMap(path -> path.stream()
-                                .map(ref -> ref.getFieldName())
-                                .filter(f -> f != null && !f.isBlank())
-                                .findFirst())
+
+        // 🔒 Campo JSON desconocido (por FAIL_ON_UNKNOWN_PROPERTIES)
+        if (cause instanceof UnrecognizedPropertyException upe) {
+                String fieldName = upe.getPropertyName();
+
+                String message = messageSource.getMessage(
+                "validation.json.unknownField",
+                new Object[]{fieldName},
+                "Unknown field: " + fieldName,
+                LocaleContextHolder.getLocale()
+                );
+
+                return buildValidationError(message, request);
+        }
+
+        // 🔒 Enum inválido (TaskStatus, etc.)
+        if (cause instanceof InvalidFormatException ife
+                && ife.getTargetType() != null
+                && ife.getTargetType().isEnum()
+        ) {
+                String fieldName = ife.getPath().stream()
+                        .map(ref -> ref.getFieldName())
+                        .filter(Objects::nonNull)
+                        .findFirst()
                         .orElse("field");
 
-                message = messageSource.getMessage(
+                String message = messageSource.getMessage(
                 "validation.invalidEnum",
                 new Object[]{fieldName},
                 fieldName + ": invalid value",
                 LocaleContextHolder.getLocale()
                 );
-            }
+
+                return buildValidationError(message, request);
         }
+
+        // 🔒 Fallback: JSON malformado
+        String message = messageSource.getMessage(
+                "validation.json.invalid",
+                null,
+                "Invalid request body",
+                LocaleContextHolder.getLocale()
+        );
+
+        return buildValidationError(message, request);
+        }
+
+        // =========================
+        // Method Argument Type Mismatch (e.g., Long id in path)
+        // =========================
+        @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+                MethodArgumentTypeMismatchException ex,
+                HttpServletRequest request
+        ) {
+        String message = messageSource.getMessage(
+                "validation.param.invalid",
+                new Object[]{ex.getName()},
+                ex.getName() + ": invalid value",
+                LocaleContextHolder.getLocale()
+        );
 
         ApiErrorResponse response = new ApiErrorResponse(
                 OffsetDateTime.now(),
@@ -151,7 +198,37 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.badRequest().body(response);
-    }
+        }
+
+        
+
+        // =========================
+        // BadRequestException
+        // =========================
+
+        @ExceptionHandler(BadRequestException.class)
+        public ResponseEntity<ApiErrorResponse> handleBadRequest(
+                BadRequestException ex,
+                HttpServletRequest request
+        ) {
+        String message = messageSource.getMessage(
+                ex.getMessageKey(),
+                ex.getArgs(),
+                ex.getMessageKey(),
+                LocaleContextHolder.getLocale()
+        );
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ErrorCode.VALIDATION_ERROR.name(),
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(response);
+        }
+
 
     // =========================
     // Fallback 500 (controlado)
@@ -204,6 +281,24 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+
+
+
+
+        private ResponseEntity<ApiErrorResponse> buildValidationError(
+        String message,
+        HttpServletRequest request
+        ) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                OffsetDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ErrorCode.VALIDATION_ERROR.name(),
+                message,
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(response);
         }
 
 }

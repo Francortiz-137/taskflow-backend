@@ -3,6 +3,7 @@ package com.franco.backend.controller;
 import com.franco.backend.config.SwaggerExamples;
 import com.franco.backend.dto.ApiErrorResponse;
 import com.franco.backend.dto.CreateTaskRequest;
+import com.franco.backend.dto.PageResponse;
 import com.franco.backend.dto.TaskResponse;
 import com.franco.backend.dto.UpdateTaskRequest;
 import com.franco.backend.dto.UpdateTaskStatusRequest;
@@ -88,7 +89,7 @@ public class TaskController {
         @ApiResponse(responseCode = "200", description = "List of tasks")
     })
     @GetMapping
-    public Page<TaskResponse> findAllPages(
+    public PageResponse<TaskResponse> findAllPages(
         @Parameter(description = "Page (0-based)", example = "0")
         @RequestParam(defaultValue = "0") 
         @Min(value = 0, message = "{validation.page.min}")
@@ -125,8 +126,15 @@ public class TaskController {
         @RequestParam(required = false) 
         String title
     ) {
-        
-        return taskService.findAll(page, size, sort, status, title);
+        Page<TaskResponse> pageResponse = taskService.findAll(page, size, sort, status, title);
+
+        return new PageResponse<>(
+            pageResponse.getContent(),
+            pageResponse.getNumber(),
+            pageResponse.getSize(),
+            pageResponse.getTotalElements(),
+            pageResponse.getTotalPages()
+        );
 }
 
     // READ TASK BY ID

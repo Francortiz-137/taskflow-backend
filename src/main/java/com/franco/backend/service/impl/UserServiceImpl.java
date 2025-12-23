@@ -62,10 +62,17 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void changePassword(Long id, ChangePasswordRequest request) {
-
+        
+        // Fetch user
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 
+        // Idempotent update validation - if the new password is the same as the current one, we consider it a no-op
+        if (user.getPasswordHash() == null) {
+            throw new IllegalStateException("User without password hash");
+        }
+
+        // Validate current password
         if (!passwordService.matches(
                 request.currentPassword(),
                 user.getPasswordHash())
@@ -73,11 +80,19 @@ public class UserServiceImpl implements IUserService {
             throw new InvalidPasswordException();
         }
 
+        // Hash new password
         String newHash = passwordService.hash(request.newPassword());
-        user.setPasswordHash(newHash);
 
+        // Idempotent update - check if the new password hash is the same as the current one
+        if (newHash.equals(user.getPasswordHash())) {
+            throw new BadRequestException("user.password.sameAsCurrent");
+        }
+
+        // Update password hash
+        user.setPasswordHash(newHash);
         repository.save(user);
     }
+
 
     @Override
     public UserResponse update(Long id, UpdateUserRequest request) {
@@ -85,20 +100,18 @@ public class UserServiceImpl implements IUserService {
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 
-        if (request.name() == null && request.email() == null) {
+        if (request.name() == null) {
             throw new BadRequestException("validation.emptyUpdate");
         }
-
-        if (request.email() != null) {
-            throw new BadRequestException("user.email.updateNotAllowed");
+        // Idempotent update
+        if (request.name().equals(user.getName())) {
+            return mapper.toResponse(user); // no save 
         }
 
-        if (request.name() != null) {
-            user.setName(request.name());
-        }
 
-        User saved = repository.save(user);
-        return mapper.toResponse(saved);
+        user.setName(request.name());
+
+        return mapper.toResponse(repository.save(user));
     }
 
 }
