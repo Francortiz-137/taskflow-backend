@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.4.1'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'com.franco'
@@ -62,10 +63,26 @@ tasks.withType(Test).configureEach {
     enabled = true
 }
 
-
-
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += [
         '-Amapstruct.defaultComponentModel=spring'
     ]
 }
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+    }
+}
+
