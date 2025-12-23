@@ -1,4 +1,4 @@
-package com.franco.backend.dto;
+package com.franco.backend.dto.user;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

@@ -1,4 +1,4 @@
-package com.franco.backend.dto;
+package com.franco.backend.dto.common;
 
 import java.time.OffsetDateTime;
 

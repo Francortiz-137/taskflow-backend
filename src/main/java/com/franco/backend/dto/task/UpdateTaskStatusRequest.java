@@ -1,4 +1,4 @@
-package com.franco.backend.dto;
+package com.franco.backend.dto.task;
 
 import com.franco.backend.entity.TaskStatus;
 

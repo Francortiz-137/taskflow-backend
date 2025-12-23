@@ -1,4 +1,4 @@
-package com.franco.backend.dto;
+package com.franco.backend.dto.task;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
