@@ -2,7 +2,7 @@ package com.franco.backend.security;
 
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class PlainPasswordHasher implements PasswordService {
 
     // Just for testing purposes. Do NOT use in production.
