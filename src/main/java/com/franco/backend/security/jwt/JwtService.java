@@ -1,5 +1,12 @@
 package com.franco.backend.security.jwt;
 
-public class JwtService {
-    
+import java.util.Optional;
+
+public interface JwtService {
+
+    String generateToken(String subject);
+
+    boolean isValid(String token);
+
+    Optional<String> extractSubject(String token);
 }
