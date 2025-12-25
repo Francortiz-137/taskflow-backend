@@ -1,46 +1,61 @@
 package com.franco.backend.security.jwt.impl;
 
-import com.franco.backend.config.JwtProperties;
-import com.franco.backend.security.jwt.JwtService;
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Service;
+
+import com.franco.backend.config.JwtProperties;
+import com.franco.backend.entity.UserRole;
+import com.franco.backend.security.jwt.JwtService;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.JwtException;
+
 @Service
-@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
 
+    private static final String ROLE_CLAIM = "role";
+
+    private final SecretKey secretKey;
     private final JwtProperties properties;
 
+    public JwtServiceImpl(JwtProperties properties) {
+        this.properties = properties;
+        this.secretKey = Keys.hmacShaKeyFor(
+            properties.secret().getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
     @Override
-    public String generateToken(String subject) {
+    public String generateToken(String subject, UserRole role) {
 
         Instant now = Instant.now();
-        Instant expiration = now.plusSeconds(properties.expirationSeconds());
+        Instant expiration = now.plus(
+            properties.expirationMinutes(),
+            ChronoUnit.MINUTES
+        );
 
         return Jwts.builder()
-                .setSubject(subject)
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiration))
-                .signWith(
-                        Keys.hmacShaKeyFor(
-                                properties.secret().getBytes(StandardCharsets.UTF_8)
-                        ),
-                        SignatureAlgorithm.HS256
-                )
-                .compact();
+            .subject(subject)
+            .claim(ROLE_CLAIM, role.name())
+            .issuedAt(Date.from(now))
+            .expiration(Date.from(expiration))
+            .signWith(secretKey)
+            .compact();
     }
 
     @Override
     public boolean isValid(String token) {
         try {
-            parse(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException ex) {
             return false;
@@ -50,21 +65,28 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public Optional<String> extractSubject(String token) {
         try {
-            Claims claims = parse(token).getBody();
-            return Optional.ofNullable(claims.getSubject());
+            return Optional.ofNullable(parseClaims(token).getSubject());
         } catch (JwtException | IllegalArgumentException ex) {
             return Optional.empty();
         }
     }
 
-    private Jws<Claims> parse(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(
-                        Keys.hmacShaKeyFor(
-                                properties.secret().getBytes(StandardCharsets.UTF_8)
-                        )
-                )
-                .build()
-                .parseClaimsJws(token);
+    @Override
+    public Optional<UserRole> extractRole(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            String role = claims.get(ROLE_CLAIM, String.class);
+            return Optional.ofNullable(role).map(UserRole::valueOf);
+        } catch (JwtException | IllegalArgumentException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+            .verifyWith(secretKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 }

@@ -12,35 +12,70 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.franco.backend.config.JwtProperties;
 import com.franco.backend.security.jwt.JwtService;
 import com.franco.backend.security.jwt.impl.JwtServiceImpl;
+import com.franco.backend.entity.UserRole;
 
 @ExtendWith(MockitoExtension.class)
 class JwtServiceImplTest {
 
-    JwtService jwtService;
+    private JwtService jwtService;
+
+    private final JwtProperties properties = new JwtProperties(
+        "test-secret-test-secret-test-secret-test-secret",
+        3600
+    );
 
     @BeforeEach
     void setUp() {
-        JwtProperties properties = new JwtProperties(
-                "TEST_SECRET_KEY_123456789012345678901234567890",
-                3600
-        );
         jwtService = new JwtServiceImpl(properties);
     }
 
     @Test
     void shouldGenerateAndValidateToken() {
-        String token = jwtService.generateToken("user@test.com");
+        String token = jwtService.generateToken(
+            "user@test.com",
+            UserRole.USER
+        );
 
+        assertThat(token).isNotBlank();
         assertThat(jwtService.isValid(token)).isTrue();
     }
 
+
     @Test
-    void shouldExtractSubject() {
-        String token = jwtService.generateToken("user@test.com");
+    void shouldExtractSubjectAndRole() {
+        String token = jwtService.generateToken(
+            "user@test.com",
+            UserRole.ADMIN
+        );
 
         Optional<String> subject = jwtService.extractSubject(token);
+        Optional<UserRole> role = jwtService.extractRole(token);
 
         assertThat(subject).contains("user@test.com");
+        assertThat(role).contains(UserRole.ADMIN);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenTokenIsExpired() {
+        JwtProperties shortLivedProps = new JwtProperties(
+            properties.secret(),
+            1/60 // 1 second
+        );
+
+        JwtService shortLivedService = new JwtServiceImpl(shortLivedProps);
+
+        String token = shortLivedService.generateToken(
+            "user@test.com",
+            UserRole.USER
+        );
+
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException ignored) {}
+
+        assertThat(shortLivedService.isValid(token)).isFalse();
+        assertThat(shortLivedService.extractSubject(token)).isEmpty();
+        assertThat(shortLivedService.extractRole(token)).isEmpty();
     }
 
     @Test
