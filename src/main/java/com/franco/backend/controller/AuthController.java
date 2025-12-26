@@ -2,13 +2,17 @@ package com.franco.backend.controller;
 
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.service.IAuthService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.security.Principal;
+
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,4 +31,10 @@ public class AuthController {
     ) {
         return authService.login(request);
     }
+
+    @GetMapping("/me")
+    public UserResponse me(Principal principal) {
+        return authService.me(principal.getName());
+    }
+    
 }

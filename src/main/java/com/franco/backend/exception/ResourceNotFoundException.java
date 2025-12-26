@@ -15,4 +15,8 @@ public class ResourceNotFoundException extends ApiException {
     public static ResourceNotFoundException userNotFound(Long id) {
         return new ResourceNotFoundException("user.notFound", id);
     }
+
+    public static ResourceNotFoundException userNotFound(String email) {
+        return new ResourceNotFoundException("user.notFound", email);
+    }
 }

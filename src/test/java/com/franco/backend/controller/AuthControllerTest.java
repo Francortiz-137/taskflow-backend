@@ -3,9 +3,11 @@ package com.franco.backend.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
@@ -13,6 +15,7 @@ import com.franco.backend.config.I18nConfig;
 import com.franco.backend.config.JacksonConfig;
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.AuthenticationException;
 import com.franco.backend.service.IAuthService;
@@ -25,8 +28,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+
 
 @AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(AuthController.class)
@@ -144,4 +155,35 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
     }
+
+    // =========================
+    // GET /api/auth/me
+    // =========================
+    @Nested
+    class Get
+    {
+        @Test
+        void shouldReturnAuthenticatedUser() throws Exception {
+
+            UserResponse response = new UserResponse(
+                1L,
+                "John",
+                "user@test.com",
+                UserRole.USER,
+                now,
+                now
+            );
+
+            when(authService.me("user@test.com")).thenReturn(response);
+
+            mockMvc.perform(get("/api/auth/me")
+                    .principal(() -> "user@test.com") // ✅ SIMPLE Y LIMPIO
+                    .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("user@test.com"));
+        }
+
+    }
+    
+
 }
