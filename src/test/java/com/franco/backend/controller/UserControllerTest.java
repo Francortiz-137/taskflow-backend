@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -16,12 +17,14 @@ import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
 import com.franco.backend.config.I18nConfig;
 import com.franco.backend.config.JacksonConfig;
+import com.franco.backend.config.MethodSecurityConfig;
 import com.franco.backend.dto.user.CreateUserRequest;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.EmailAlreadyExistsException;
 import com.franco.backend.exception.InvalidPasswordException;
 import com.franco.backend.exception.ResourceNotFoundException;
+import com.franco.backend.security.jwt.JwtAuthenticationFilter;
 import com.franco.backend.service.IUserService;
 import com.franco.backend.config.SecurityConfig;
 import com.franco.backend.exception.BadRequestException;
@@ -35,6 +38,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 
 
 @AutoConfigureMockMvc(addFilters = false)
@@ -42,7 +46,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({
     GlobalExceptionHandler.class,
     I18nConfig.class,
-    JacksonConfig.class
+    JacksonConfig.class,
+    MethodSecurityConfig.class
 })
 class UserControllerTest {
 
@@ -79,6 +84,7 @@ class UserControllerTest {
                 .thenReturn(response);
 
             mockMvc.perform(post("/api/users")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .header("Accept-Language", "en")
@@ -104,6 +110,7 @@ class UserControllerTest {
                 .thenThrow(new EmailAlreadyExistsException("user@test.com"));
 
             mockMvc.perform(post("/api/users")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -120,6 +127,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenEmailIsInvalid() throws Exception {
             mockMvc.perform(post("/api/users")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -135,6 +143,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenUnknownFieldIsSent() throws Exception {
             mockMvc.perform(post("/api/users")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -170,6 +179,7 @@ class UserControllerTest {
             when(userService.findById(1L)).thenReturn(response);
 
             mockMvc.perform(get("/api/users/1")
+                    .with(user("user@test.com").roles("USER"))
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -184,7 +194,8 @@ class UserControllerTest {
             when(userService.findById(99L))
                 .thenThrow(ResourceNotFoundException.userNotFound(99L));
 
-            mockMvc.perform(get("/api/users/99"))
+            mockMvc.perform(get("/api/users/99")
+                .with(user("user@test.com").roles("USER")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("NOT_FOUND"))
                 .andExpect(jsonPath("$.message").exists());
@@ -192,7 +203,8 @@ class UserControllerTest {
 
         @Test
         void shouldFailWhenIdIsInvalid() throws Exception {
-            mockMvc.perform(get("/api/users/0"))
+            mockMvc.perform(get("/api/users/0")
+                .with(user("user@test.com").roles("USER")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
         }
@@ -204,6 +216,7 @@ class UserControllerTest {
     @Nested
     class FindAll {
 
+        @WithMockUser(roles = "ADMIN")
         @Test
         void shouldReturnAllUsers() throws Exception {
             List<UserResponse> users = List.of(
@@ -220,6 +233,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.length()").value(2));
         }
 
+        @WithMockUser(roles = "ADMIN")
         @Test
         void shouldReturnEmptyList() throws Exception {
             when(userService.findAll()).thenReturn(List.of());
@@ -229,6 +243,15 @@ class UserControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
         }
+
+        @WithMockUser(roles = "USER")
+        @Test
+        void shouldFailWhenUserIsNotAdmin() throws Exception {
+
+            mockMvc.perform(get("/api/users"))
+                .andExpect(status().isForbidden());
+        }
+
     }
 
     // =========================
@@ -252,6 +275,7 @@ class UserControllerTest {
                 .thenReturn(response);
 
             mockMvc.perform(put("/api/users/1")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         { "name": "New Name" }
@@ -266,6 +290,7 @@ class UserControllerTest {
                 .thenThrow(ResourceNotFoundException.userNotFound(99L));
 
             mockMvc.perform(put("/api/users/99")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -279,6 +304,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenIdIsInvalid() throws Exception {
             mockMvc.perform(put("/api/users/0")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -292,6 +318,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenBodyIsInvalid() throws Exception {
             mockMvc.perform(put("/api/users/1")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         { "name": "" }
@@ -314,6 +341,7 @@ class UserControllerTest {
             doNothing().when(userService).changePassword(eq(1L), any());
 
             mockMvc.perform(put("/api/users/1/password")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -330,6 +358,7 @@ class UserControllerTest {
                 .when(userService).changePassword(eq(1L), any());
 
             mockMvc.perform(put("/api/users/1/password")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {
@@ -344,6 +373,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenBodyIsInvalid() throws Exception {
             mockMvc.perform(put("/api/users/1/password")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         { "currentPassword": "", "newPassword": "" }
@@ -355,6 +385,7 @@ class UserControllerTest {
         @Test
         void shouldFailWhenIdIsInvalid() throws Exception {
             mockMvc.perform(put("/api/users/0/password")
+                    .with(user("user@test.com").roles("USER"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                         {

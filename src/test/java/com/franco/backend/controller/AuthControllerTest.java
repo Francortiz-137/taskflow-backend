@@ -177,7 +177,7 @@ class AuthControllerTest {
             when(authService.me("user@test.com")).thenReturn(response);
 
             mockMvc.perform(get("/api/auth/me")
-                    .principal(() -> "user@test.com") // ✅ SIMPLE Y LIMPIO
+                    .principal(() -> "user@test.com")
                     .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("user@test.com"));

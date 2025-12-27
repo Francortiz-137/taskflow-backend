@@ -20,6 +20,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -299,6 +302,27 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.badRequest().body(response);
+        }
+
+        @ExceptionHandler({
+        AccessDeniedException.class,
+        AuthorizationDeniedException.class
+        })
+        public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+                Exception ex,
+                HttpServletRequest request
+        ) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(
+                new ApiErrorResponse(
+                        OffsetDateTime.now(),
+                        HttpStatus.FORBIDDEN.value(),
+                        ErrorCode.FORBIDDEN.name(),
+                        "FORBIDDEN",
+                        request.getRequestURI()
+                )
+                );
         }
 
 }
