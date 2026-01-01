@@ -16,14 +16,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.franco.backend.api.GlobalExceptionHandler;
 import com.franco.backend.config.CorsProperties;
 import com.franco.backend.config.I18nConfig;
+import com.franco.backend.config.JwtProperties;
 import com.franco.backend.exception.ResourceNotFoundException;
+import com.franco.backend.security.jwt.JwtService;
 import com.franco.backend.service.ITaskService;
-import com.franco.backend.config.SecurityConfig;
+import com.franco.backend.config.TestSecurityDisableConfig;
 
 @WebMvcTest(TaskController.class)
 @Import({GlobalExceptionHandler.class, 
         I18nConfig.class,
-        SecurityConfig.class
+        TestSecurityDisableConfig.class
     })
 public class TaskControllerI18nTest {
 
@@ -35,6 +37,13 @@ public class TaskControllerI18nTest {
 
     @MockitoBean
     CorsProperties corsProperties;
+
+     @MockitoBean
+    JwtService jwtService;
+
+    @MockitoBean
+    JwtProperties jwtProperties;
+
 
     @Test
     void shouldReturnErrorMessageInEnglish() throws Exception {

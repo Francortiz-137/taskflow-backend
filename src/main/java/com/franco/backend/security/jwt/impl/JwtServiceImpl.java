@@ -23,6 +23,8 @@ import io.jsonwebtoken.JwtException;
 public class JwtServiceImpl implements JwtService {
 
     private static final String ROLE_CLAIM = "role";
+    private static final String USER_ID_CLAIM = "userId";
+
 
     private final SecretKey secretKey;
     private final JwtProperties properties;
@@ -35,7 +37,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(String subject, UserRole role) {
+    public String generateToken(Long userId, String subject, UserRole role) {
 
         Instant now = Instant.now();
         Instant expiration = now.plus(
@@ -45,12 +47,14 @@ public class JwtServiceImpl implements JwtService {
 
         return Jwts.builder()
             .subject(subject)
+            .claim(USER_ID_CLAIM, userId)
             .claim(ROLE_CLAIM, role.name())
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiration))
             .signWith(secretKey)
             .compact();
     }
+
 
     @Override
     public boolean isValid(String token) {
@@ -81,6 +85,28 @@ public class JwtServiceImpl implements JwtService {
             return Optional.empty();
         }
     }
+
+    @Override
+    public Optional<Long> extractUserId(String token) {
+        try {
+            Object value = parseClaims(token).get(USER_ID_CLAIM);
+
+            if (value instanceof Integer i) {
+                return Optional.of(i.longValue());
+            }
+            if (value instanceof Long l) {
+                return Optional.of(l);
+            }
+            if (value instanceof String s) {
+                return Optional.of(Long.parseLong(s));
+            }
+            return Optional.empty();
+
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
+    }
+
 
     private Claims parseClaims(String token) {
         return Jwts.parser()

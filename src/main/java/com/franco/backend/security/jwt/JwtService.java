@@ -6,11 +6,13 @@ import com.franco.backend.entity.UserRole;
 
 public interface JwtService {
 
-    String generateToken(String subject, UserRole role);
+    String generateToken(Long userId, String subject, UserRole role);
 
     boolean isValid(String token);
 
     Optional<String> extractSubject(String token);
 
     Optional<UserRole> extractRole(String token);
+
+    Optional<Long> extractUserId(String token);
 }

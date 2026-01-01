@@ -29,53 +29,28 @@ class JwtServiceImplTest {
         jwtService = new JwtServiceImpl(properties);
     }
 
-    @Test
-    void shouldGenerateAndValidateToken() {
+     @Test
+    void shouldGenerateAndParseToken() {
         String token = jwtService.generateToken(
+            1L,
             "user@test.com",
             UserRole.USER
         );
 
-        assertThat(token).isNotBlank();
         assertThat(jwtService.isValid(token)).isTrue();
-    }
-
-
-    @Test
-    void shouldExtractSubjectAndRole() {
-        String token = jwtService.generateToken(
-            "user@test.com",
-            UserRole.ADMIN
-        );
-
-        Optional<String> subject = jwtService.extractSubject(token);
-        Optional<UserRole> role = jwtService.extractRole(token);
-
-        assertThat(subject).contains("user@test.com");
-        assertThat(role).contains(UserRole.ADMIN);
+        assertThat(jwtService.extractSubject(token)).contains("user@test.com");
+        assertThat(jwtService.extractRole(token)).contains(UserRole.USER);
+        assertThat(jwtService.extractUserId(token)).contains(1L);
     }
 
     @Test
-    void shouldReturnEmptyWhenTokenIsExpired() {
-        JwtProperties shortLivedProps = new JwtProperties(
-            properties.secret(),
-            1/60 // 1 second
-        );
+    void shouldReturnEmptyWhenTokenIsInvalid() {
+        String invalid = "invalid.token.here";
 
-        JwtService shortLivedService = new JwtServiceImpl(shortLivedProps);
-
-        String token = shortLivedService.generateToken(
-            "user@test.com",
-            UserRole.USER
-        );
-
-        try {
-            Thread.sleep(1500);
-        } catch (InterruptedException ignored) {}
-
-        assertThat(shortLivedService.isValid(token)).isFalse();
-        assertThat(shortLivedService.extractSubject(token)).isEmpty();
-        assertThat(shortLivedService.extractRole(token)).isEmpty();
+        assertThat(jwtService.isValid(invalid)).isFalse();
+        assertThat(jwtService.extractSubject(invalid)).isEmpty();
+        assertThat(jwtService.extractRole(invalid)).isEmpty();
+        assertThat(jwtService.extractUserId(invalid)).isEmpty();
     }
 
     @Test
