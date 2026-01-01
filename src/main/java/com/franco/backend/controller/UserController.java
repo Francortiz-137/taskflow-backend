@@ -108,6 +108,9 @@ public class UserController {
             @Valid
             ChangePasswordRequest request
     ) {
+        if (principal == null || !principal.id().equals(id)) {
+            throw new BadRequestException("You can only change your own password");
+        }
         userService.changePassword(id, request);
     }
 
