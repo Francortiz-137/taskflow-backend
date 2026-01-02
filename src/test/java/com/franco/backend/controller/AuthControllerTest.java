@@ -72,7 +72,8 @@ class AuthControllerTest {
                 "John",
                 "user@test.com",
                 UserRole.USER,
-                now
+                now, 
+                "refresh-token-123"
             );
 
             when(authService.login(any(LoginRequest.class)))
@@ -92,7 +93,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.email").value("user@test.com"))
                 .andExpect(jsonPath("$.name").value("John"))
                 .andExpect(jsonPath("$.role").value("USER"))
-                .andExpect(jsonPath("$.createdAt").exists());
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token-123"));
         }
 
         @Test

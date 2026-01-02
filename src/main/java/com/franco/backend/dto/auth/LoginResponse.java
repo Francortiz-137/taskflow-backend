@@ -8,5 +8,6 @@ public record LoginResponse(
     String name,
     String email,
     UserRole role,
-    OffsetDateTime createdAt
+    OffsetDateTime createdAt,
+    String refreshToken
 ) {}

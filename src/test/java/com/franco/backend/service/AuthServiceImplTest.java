@@ -14,6 +14,7 @@ import com.franco.backend.entity.User;
 import com.franco.backend.exception.AuthenticationException;
 import com.franco.backend.repository.UserRepository;
 import com.franco.backend.security.PasswordService;
+import com.franco.backend.service.auth.RefreshTokenService;
 import com.franco.backend.service.impl.AuthServiceImpl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,6 +29,9 @@ class AuthServiceImplTest {
 
     @Mock
     PasswordService passwordService;
+
+    @Mock
+    RefreshTokenService refreshTokenService;
 
     @InjectMocks
     AuthServiceImpl service;
@@ -44,6 +48,9 @@ class AuthServiceImplTest {
             .thenReturn(Optional.of(user));
         when(passwordService.matches("password", "HASH"))
             .thenReturn(true);
+        when(refreshTokenService.issue(any(User.class)))
+            .thenReturn("refresh-token-123");
+
 
         LoginResponse result = service.login(
             new LoginRequest("user@test.com", "password")
