@@ -213,4 +213,25 @@ class AuthControllerTest {
         }
     }
 
+    // =========================
+    // POST /api/auth/logout
+    // =========================
+    @Nested
+    class Logout {
+
+        @Test
+        void shouldLogoutSuccessfully() throws Exception {
+
+            mockMvc.perform(post("/api/auth/logout")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "refreshToken": "refresh-token-123"
+                        }
+                    """))
+                .andExpect(status().isNoContent());
+        }
+    }
+
+
 }

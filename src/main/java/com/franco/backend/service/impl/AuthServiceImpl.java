@@ -83,8 +83,7 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public void logout(LogoutRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'logout'");
+        refreshTokenService.revoke(request.refreshToken());
     }
 
 }

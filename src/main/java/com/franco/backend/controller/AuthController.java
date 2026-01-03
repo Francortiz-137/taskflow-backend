@@ -2,6 +2,7 @@ package com.franco.backend.controller;
 
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.auth.LogoutRequest;
 import com.franco.backend.dto.auth.RefreshRequest;
 import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.security.Principal;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,6 +46,12 @@ public class AuthController {
             @RequestBody @Valid RefreshRequest request
     ) {
         return authService.refresh(request);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@RequestBody @Valid LogoutRequest request) {
+        authService.logout(request);
     }
 
     

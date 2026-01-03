@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.auth.LogoutRequest;
 import com.franco.backend.dto.auth.RefreshRequest;
 import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.entity.User;
@@ -23,6 +24,7 @@ import com.franco.backend.service.impl.AuthServiceImpl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,6 +114,15 @@ class AuthServiceImplTest {
 
         assertThat(response.accessToken())
             .isEqualTo("new-access-token");
+    }
+
+    @Test
+    void shouldLogout() {
+
+        service.logout(new LogoutRequest("refresh-token-123"));
+
+        verify(refreshTokenService)
+            .revoke("refresh-token-123");
     }
 
 }
