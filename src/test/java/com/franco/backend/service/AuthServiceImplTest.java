@@ -10,10 +10,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.auth.RefreshRequest;
+import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.entity.User;
+import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.AuthenticationException;
 import com.franco.backend.repository.UserRepository;
 import com.franco.backend.security.PasswordService;
+import com.franco.backend.security.jwt.JwtService;
 import com.franco.backend.service.auth.RefreshTokenService;
 import com.franco.backend.service.impl.AuthServiceImpl;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +36,10 @@ class AuthServiceImplTest {
 
     @Mock
     RefreshTokenService refreshTokenService;
+
+    @Mock
+    JwtService jwtService;
+
 
     @InjectMocks
     AuthServiceImpl service;
@@ -83,4 +91,27 @@ class AuthServiceImplTest {
             service.login(new LoginRequest("x@test.com", "bad"))
         ).isInstanceOf(AuthenticationException.class);
     }
+
+    @Test
+    void shouldRefreshAccessToken() {
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("user@test.com");
+        user.setRole(UserRole.USER);
+
+        when(refreshTokenService.validateAndGetUser("refresh-token-123"))
+            .thenReturn(user);
+
+        when(jwtService.generateToken(1L, "user@test.com", UserRole.USER))
+            .thenReturn("new-access-token");
+
+        RefreshResponse response = service.refresh(
+            new RefreshRequest("refresh-token-123")
+        );
+
+        assertThat(response.accessToken())
+            .isEqualTo("new-access-token");
+    }
+
 }

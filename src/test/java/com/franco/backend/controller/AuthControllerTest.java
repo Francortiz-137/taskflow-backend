@@ -15,6 +15,7 @@ import com.franco.backend.config.I18nConfig;
 import com.franco.backend.config.JacksonConfig;
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.AuthenticationException;
@@ -187,5 +188,29 @@ class AuthControllerTest {
 
     }
     
+    // =========================
+    // POST /api/auth/refresh
+    // =========================
+    @Nested
+    class Refresh {
+
+        @Test
+        void shouldReturnAccessToken() throws Exception {
+
+            when(authService.refresh(any()))
+                .thenReturn(new RefreshResponse("new-access-token"));
+
+            mockMvc.perform(post("/api/auth/refresh")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                        "refreshToken": "refresh-token-123"
+                        }
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken")
+                    .value("new-access-token"));
+        }
+    }
 
 }

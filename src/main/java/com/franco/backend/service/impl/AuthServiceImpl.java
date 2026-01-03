@@ -5,6 +5,7 @@ import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
 import com.franco.backend.dto.auth.LogoutRequest;
 import com.franco.backend.dto.auth.RefreshRequest;
+import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.User;
 import com.franco.backend.exception.AuthenticationException;
@@ -12,6 +13,7 @@ import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.UserMapper;
 import com.franco.backend.repository.UserRepository;
 import com.franco.backend.security.PasswordService;
+import com.franco.backend.security.jwt.JwtService;
 import com.franco.backend.service.IAuthService;
 import com.franco.backend.service.auth.RefreshTokenService;
 
@@ -26,6 +28,8 @@ public class AuthServiceImpl implements IAuthService {
     private final PasswordService passwordService;
     private final UserMapper userMapper;
     private final RefreshTokenService refreshTokenService;
+    private final JwtService jwtService;
+
     
 
     @Override
@@ -63,9 +67,18 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public AuthResponse refresh(RefreshRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'refresh'");
+    public RefreshResponse refresh(RefreshRequest request) {
+
+        User user = refreshTokenService
+            .validateAndGetUser(request.refreshToken());
+
+        String accessToken = jwtService.generateToken(
+            user.getId(),
+            user.getEmail(),
+            user.getRole()
+        );
+
+        return new RefreshResponse(accessToken);
     }
 
     @Override

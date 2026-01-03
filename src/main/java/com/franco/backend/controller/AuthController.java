@@ -2,6 +2,8 @@ package com.franco.backend.controller;
 
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
+import com.franco.backend.dto.auth.RefreshRequest;
+import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.service.IAuthService;
 
@@ -36,5 +38,13 @@ public class AuthController {
     public UserResponse me(Principal principal) {
         return authService.me(principal.getName());
     }
+
+    @PostMapping("/refresh")
+    public RefreshResponse refresh(
+            @RequestBody @Valid RefreshRequest request
+    ) {
+        return authService.refresh(request);
+    }
+
     
 }
