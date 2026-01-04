@@ -19,5 +19,8 @@ public record TaskResponse(
         @Schema(description = "Creation date of the task", example = "2023-05-15T10:00:00Z")
         OffsetDateTime createdAt,
         @Schema(description = "Update date of the task", example = "2023-05-15T11:30:00Z")
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        @Schema(description = "User ID who created the task", example = "42")
+        Long createdBy
+
 ) {}

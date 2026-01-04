@@ -12,6 +12,7 @@ import com.franco.backend.dto.task.UpdateTaskStatusRequest;
 import com.franco.backend.mapper.TaskMapper;
 import com.franco.backend.repository.TaskRepository;
 import com.franco.backend.repository.specification.TaskSpecifications;
+import com.franco.backend.security.SecurityUtils;
 import com.franco.backend.service.ITaskService;
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +23,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -36,7 +36,6 @@ public class TaskServiceImpl implements ITaskService {
         Task task = mapper.toEntity(request);
 
         task.setStatus(TaskStatus.TODO);
-        task.setCreatedAt(OffsetDateTime.now());
 
         return mapper.toResponse(repository.save(task));
     }
@@ -44,15 +43,18 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public TaskResponse findById(Long id) {
-        Task task = repository.findById(id)
+        Long userId = SecurityUtils.currentUserId();
+
+        Task task = repository.findByIdAndCreatedBy(id, userId)
                 .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
 
         return mapper.toResponse(task);
     }
 
+
     @Override
     public TaskResponse update(Long id, UpdateTaskRequest request) {
-        Task task = getTaskOrThrow(id);
+        Task task = getOwnedTaskOrThrow(id);
 
         applyUpdate(task, request);
 
@@ -64,13 +66,10 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public void delete(Long id) {
-    Task task = repository.findById(id)
-            .orElseThrow(() ->
-                ResourceNotFoundException.taskNotFound(id)
-            );
+        Task task = getOwnedTaskOrThrow(id);
 
-    repository.delete(task);
-}
+        repository.delete(task);
+    }
 
     @Override
     public Page<TaskResponse> findAll(
@@ -94,7 +93,7 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public TaskResponse updateStatus(Long id, UpdateTaskStatusRequest request) {
-        Task task = getTaskOrThrow(id);
+        Task task = getOwnedTaskOrThrow(id);
 
         TaskStatus current = task.getStatus();
         TaskStatus target = request.status();
@@ -150,18 +149,25 @@ public class TaskServiceImpl implements ITaskService {
         TaskStatus status,
         String title
     ) {
+        Long userId = SecurityUtils.currentUserId();
+
         return Specification
-                .where(TaskSpecifications.hasStatus(status))
+                .where(TaskSpecifications.hasOwner(userId))
+                .and(TaskSpecifications.hasStatus(status))
                 .and(TaskSpecifications.titleContains(title));
     }
+
 
     //----------------------
     // GET TASK OR THROW
     //----------------------
-    private Task getTaskOrThrow(Long id) {
-        return repository.findById(id)
+    private Task getOwnedTaskOrThrow(Long id) {
+        Long userId = SecurityUtils.currentUserId();
+
+        return repository.findByIdAndCreatedBy(id, userId)
                 .orElseThrow(() -> ResourceNotFoundException.taskNotFound(id));
     }
+
 
 
     //----------------------

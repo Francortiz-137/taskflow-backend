@@ -1,9 +1,12 @@
 package com.franco.backend.dto.task;
 
-import jakarta.validation.constraints.NotBlank;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record UpdateTaskRequest(
-       @NotBlank(message = "Title must not be blank")
-        String title,
-        String description
+    @Schema(example = "Buy groceries")
+    String title,
+
+    @Schema(example = "Milk, Bread, Eggs")
+    String description
 ) {}
+

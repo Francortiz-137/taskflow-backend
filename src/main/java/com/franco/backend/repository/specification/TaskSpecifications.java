@@ -21,4 +21,10 @@ public class TaskSpecifications {
                             "%" + title.toLowerCase() + "%"
                         );
     }
+
+    public static Specification<Task> hasOwner(Long userId) {
+        return (root, query, cb) ->
+            cb.equal(root.get("createdBy"), userId);
+    }
+
 }
