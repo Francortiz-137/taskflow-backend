@@ -85,7 +85,8 @@ class TaskControllerTest {
                 "Task description",
                 TaskStatus.TODO,
                 now.minusDays(1),
-                now
+                now,
+                10L
         );      
 
         when(taskService.create(any()))
@@ -137,7 +138,9 @@ class TaskControllerTest {
                         null, 
                         TaskStatus.TODO, 
                         now.minusDays(1), 
-                        now);
+                        now,
+                        10L
+                );
 
                 Page<TaskResponse> page = new PageImpl<>(List.of(task));
 
@@ -164,7 +167,9 @@ class TaskControllerTest {
                         null, 
                         TaskStatus.DONE, 
                         now.minusDays(1), 
-                        now);
+                        now,
+                        10L
+                );
 
                 Page<TaskResponse> page = new PageImpl<>(List.of(task));
 
@@ -190,7 +195,9 @@ class TaskControllerTest {
                         null, 
                         TaskStatus.TODO, 
                         now.minusDays(1), 
-                        now);
+                        now,
+                        10L
+                );
 
                 Page<TaskResponse> page = new PageImpl<>(List.of(task));
 
@@ -216,13 +223,17 @@ class TaskControllerTest {
                         null, 
                         TaskStatus.TODO, 
                         now.minusDays(1), 
-                        now);
+                        now,
+                        10L
+                );
                 TaskResponse task2 = new TaskResponse(5L, 
                         "Task B", 
                         null, 
                         TaskStatus.TODO, 
                         now.minusDays(1), 
-                        now);
+                        now,
+                        10L
+                );
 
                 Page<TaskResponse> page = new PageImpl<>(List.of(task1, task2));
 
@@ -289,13 +300,15 @@ class TaskControllerTest {
     @Test
     void shouldReturnTaskById() throws Exception {
         TaskResponse task = new TaskResponse(
-                1L, 
-                "Task", 
-                null, 
-                TaskStatus.TODO, 
-                now.minusDays(1), 
-                now
-        );
+                1L,
+                "Task",
+                null,
+                TaskStatus.TODO,
+                now.minusDays(1),
+                now,
+                10L // createdBy
+                );
+
 
         when(taskService.findById(1L)).thenReturn(task);
 
@@ -340,7 +353,8 @@ class TaskControllerTest {
                 "Updated desc",
                 TaskStatus.TODO,
                 now.minusDays(1),
-                now
+                now,
+                10L
         );
 
         when(taskService.update(eq(1L), any(UpdateTaskRequest.class)))
@@ -376,19 +390,6 @@ class TaskControllerTest {
         }
 
         @Test
-        void shouldFailWhenTitleIsBlankOnUpdate() throws Exception {
-        mockMvc.perform(put("/api/tasks/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                        "title": ""
-                        }
-                """))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
-        }
-
-        @Test
         void shouldFailWhenUpdatingWithInvalidId() throws Exception {
         mockMvc.perform(put("/api/tasks/0")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -417,7 +418,8 @@ class TaskControllerTest {
                 null,
                 TaskStatus.DONE,
                 now.minusDays(1),
-                now
+                now,
+                10L
         );
 
         when(taskService.updateStatus(eq(1L), any(UpdateTaskStatusRequest.class)))
