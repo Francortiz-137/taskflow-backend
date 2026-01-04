@@ -37,10 +37,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public User validateAndGetUser(String refreshToken) {
+    @Transactional
+    public RotationResult rotate(String refreshToken) {
+
         RefreshToken rt = repository.findByToken(refreshToken)
-                .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
+            .orElseThrow(() -> new BadRequestException("Invalid refresh token"));
 
         Instant now = Instant.now();
 
@@ -48,8 +49,13 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             throw new BadRequestException("Refresh token expired or revoked");
         }
 
-        return rt.getUser();
+        rt.setRevoked(true);
+
+        String newRefresh = issue(rt.getUser());
+
+        return new RotationResult(rt.getUser(), newRefresh);
     }
+
 
     @Override
     @Transactional

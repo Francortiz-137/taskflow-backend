@@ -69,16 +69,19 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public RefreshResponse refresh(RefreshRequest request) {
 
-        User user = refreshTokenService
-            .validateAndGetUser(request.refreshToken());
+        RefreshTokenService.RotationResult result =
+            refreshTokenService.rotate(request.refreshToken());
 
         String accessToken = jwtService.generateToken(
-            user.getId(),
-            user.getEmail(),
-            user.getRole()
+            result.user().getId(),
+            result.user().getEmail(),
+            result.user().getRole()
         );
 
-        return new RefreshResponse(accessToken);
+        return new RefreshResponse(
+            accessToken,
+            result.refreshToken()
+        );
     }
 
     @Override

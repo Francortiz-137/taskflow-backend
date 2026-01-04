@@ -102,8 +102,12 @@ class AuthServiceImplTest {
         user.setEmail("user@test.com");
         user.setRole(UserRole.USER);
 
-        when(refreshTokenService.validateAndGetUser("refresh-token-123"))
-            .thenReturn(user);
+        when(refreshTokenService.rotate("refresh-token-123"))
+            .thenReturn(new RefreshTokenService.RotationResult(
+                user,
+                "new-refresh-token"
+            ));
+
 
         when(jwtService.generateToken(1L, "user@test.com", UserRole.USER))
             .thenReturn("new-access-token");
@@ -112,8 +116,9 @@ class AuthServiceImplTest {
             new RefreshRequest("refresh-token-123")
         );
 
-        assertThat(response.accessToken())
-            .isEqualTo("new-access-token");
+        assertThat(response.accessToken()).isEqualTo("new-access-token");
+        assertThat(response.refreshToken()).isEqualTo("new-refresh-token");
+
     }
 
     @Test

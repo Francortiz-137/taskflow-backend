@@ -198,7 +198,11 @@ class AuthControllerTest {
         void shouldReturnAccessToken() throws Exception {
 
             when(authService.refresh(any()))
-                .thenReturn(new RefreshResponse("new-access-token"));
+                .thenReturn(new RefreshResponse(
+                    "new-access-token",
+                    "new-refresh-token"
+                ));
+
 
             mockMvc.perform(post("/api/auth/refresh")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -209,7 +213,10 @@ class AuthControllerTest {
                     """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken")
-                    .value("new-access-token"));
+                    .value("new-access-token"))
+                .andExpect(jsonPath("$.refreshToken")
+                    .value("new-refresh-token"));
+
         }
     }
 
