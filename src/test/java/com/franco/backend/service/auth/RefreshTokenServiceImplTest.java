@@ -125,4 +125,46 @@ class RefreshTokenServiceImplTest {
 
         assertThat(token.isRevoked()).isTrue();
     }
+
+    @Test
+    void shouldRevokeAllTokensOnReuseAttack() {
+
+        User user = new User();
+
+        RefreshToken revoked = new RefreshToken();
+        revoked.setUser(user);
+        revoked.setTokenHash("HASH");
+        revoked.setRevoked(true);
+        revoked.setExpiresAt(Instant.now().plusSeconds(60));
+
+        RefreshToken other = new RefreshToken();
+        other.setUser(user);
+        other.setTokenHash("OTHER_HASH");
+        other.setRevoked(false);
+        other.setExpiresAt(Instant.now().plusSeconds(60));
+
+
+        when(repository.findByRevokedFalse())
+            .thenReturn(List.of(other));
+
+        when(repository.findByRevokedTrue())
+            .thenReturn(List.of(revoked));
+
+        when(repository.findByUser(user))
+            .thenReturn(List.of(revoked, other));
+
+        when(passwordService.matches("reuse-token", "HASH"))
+            .thenReturn(true);
+        when(passwordService.matches("reuse-token", "OTHER_HASH"))
+            .thenReturn(false);
+
+
+        assertThatThrownBy(() ->
+            service.rotate("reuse-token")
+        ).isInstanceOf(BadRequestException.class);
+
+        assertThat(revoked.isRevoked()).isTrue();
+        assertThat(other.isRevoked()).isTrue();
+    }
+
 }

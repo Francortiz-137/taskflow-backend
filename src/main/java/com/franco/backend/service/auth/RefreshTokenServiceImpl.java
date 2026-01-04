@@ -47,32 +47,46 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Transactional
     public RotationResult rotate(String refreshToken) {
 
-        List<RefreshToken> candidates = repository.findByRevokedFalse();
-
-        RefreshToken rt = candidates.stream()
-            .filter(token ->
-                passwordService.matches(
-                    refreshToken,
-                    token.getTokenHash()
-                )
-            )
-            .findFirst()
-            .orElseThrow(() ->
-                new BadRequestException("Invalid refresh token")
-            );
-
         Instant now = Instant.now();
 
-        if (rt.isRevoked() || rt.isExpired(now)) {
-            throw new BadRequestException("Refresh token expired or revoked");
+        // 1️⃣ Buscar entre tokens activos
+        List<RefreshToken> activeTokens = repository.findByRevokedFalse();
+
+        for (RefreshToken token : activeTokens) {
+
+            if (passwordService.matches(refreshToken, token.getTokenHash())) {
+
+                if (token.isExpired(now)) {
+                    throw new BadRequestException("Refresh token expired");
+                }
+
+                // Rotación normal
+                token.setRevoked(true);
+
+                String newRefresh = issue(token.getUser());
+
+                return new RotationResult(token.getUser(), newRefresh);
+            }
         }
 
-        rt.setRevoked(true);
+        // 2️⃣ No estaba en activos → buscar entre revocados (reuse attack)
+        List<RefreshToken> revokedTokens = repository.findByRevokedTrue();
 
-        String newRefresh = issue(rt.getUser());
+        for (RefreshToken token : revokedTokens) {
 
-        return new RotationResult(rt.getUser(), newRefresh);
+            if (passwordService.matches(refreshToken, token.getTokenHash())) {
+
+                // 🚨 REUSE ATTACK DETECTED
+                revokeAllForUser(token.getUser());
+
+                throw new BadRequestException("Refresh token reuse detected");
+            }
+        }
+
+        // 3️⃣ No existe en ningún lado
+        throw new BadRequestException("Invalid refresh token");
     }
+
 
 
     @Override
@@ -98,4 +112,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RNG.nextBytes(buf);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(buf);
     }
+
+    private void revokeAllForUser(User user) {
+        repository.findByUser(user)
+            .forEach(rt -> rt.setRevoked(true));
+    }
+
 }
