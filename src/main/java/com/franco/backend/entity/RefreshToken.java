@@ -4,18 +4,20 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "refresh_tokens", indexes = {
-        @Index(name = "idx_refresh_token_value", columnList = "token", unique = true),
+@Table(
+    name = "refresh_tokens",
+    indexes = {
         @Index(name = "idx_refresh_token_user_id", columnList = "user_id")
-})
+    }
+)
 public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "token", nullable = false, unique = true, length = 200)
-    private String token;
+    @Column(name = "token_hash", nullable = false, length = 255)
+    private String tokenHash;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -31,18 +33,41 @@ public class RefreshToken {
         return expiresAt.isBefore(now);
     }
 
-    // getters / setters
-    public Long getId() { return id; }
+    // ===== getters / setters =====
 
-    public String getToken() { return token; }
-    public void setToken(String token) { this.token = token; }
+    public Long getId() {
+        return id;
+    }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public String getTokenHash() {
+        return tokenHash;
+    }
 
-    public Instant getExpiresAt() { return expiresAt; }
-    public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = tokenHash;
+    }
 
-    public boolean isRevoked() { return revoked; }
-    public void setRevoked(boolean revoked) { this.revoked = revoked; }
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public boolean isRevoked() {
+        return revoked;
+    }
+
+    public void setRevoked(boolean revoked) {
+        this.revoked = revoked;
+    }
 }
