@@ -14,7 +14,7 @@ import com.franco.backend.entity.UserRole;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class User extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
