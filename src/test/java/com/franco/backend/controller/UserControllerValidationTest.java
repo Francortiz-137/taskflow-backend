@@ -19,6 +19,7 @@ import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.EmailAlreadyExistsException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.security.jwt.JwtService;
+import com.franco.backend.security.ratelimit.RateLimitFilter;
 import com.franco.backend.service.IUserService;
 
 import org.junit.jupiter.api.Nested;
@@ -54,6 +55,10 @@ class UserControllerValidationTest {
 
     @MockitoBean
     CorsProperties corsProperties;
+
+    @MockitoBean
+    RateLimitFilter rateLimitFilter;
+
 
 
     private final OffsetDateTime now = OffsetDateTime.now();

@@ -59,9 +59,9 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public UserResponse me(String email) {
-        User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> ResourceNotFoundException.userNotFound(email));
+    public UserResponse me(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> ResourceNotFoundException.userNotFound(userId));
 
         return userMapper.toResponse(user);
     }

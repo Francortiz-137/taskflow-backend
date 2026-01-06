@@ -11,7 +11,7 @@ import com.franco.backend.dto.user.UserResponse;
 public interface IAuthService {
     LoginResponse login(LoginRequest request);
 
-    UserResponse me(String email);
+    UserResponse me(Long userId);
     RefreshResponse refresh(RefreshRequest request);
     void logout(LogoutRequest request);
 

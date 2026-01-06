@@ -42,6 +42,7 @@ import com.franco.backend.entity.TaskStatus;
 import com.franco.backend.exception.BadRequestException;
 import com.franco.backend.exception.ResourceNotFoundException;
 import com.franco.backend.mapper.TaskMapper;
+import com.franco.backend.security.ratelimit.RateLimitFilter;
 import com.franco.backend.service.ITaskService;
 
 
@@ -64,6 +65,10 @@ class TaskControllerTest {
 
     @MockitoBean
     CorsProperties corsProperties;
+
+    @MockitoBean
+    RateLimitFilter rateLimitFilter;
+
 
     private final OffsetDateTime now = OffsetDateTime.now();
 

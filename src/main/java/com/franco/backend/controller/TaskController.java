@@ -62,7 +62,6 @@ public class TaskController {
     consumes = MediaType.APPLICATION_JSON_VALUE,
     produces = MediaType.APPLICATION_JSON_VALUE
 )
-    @ResponseStatus(code = HttpStatus.CREATED)
     public ResponseEntity<TaskResponse> create(@RequestBody @Valid CreateTaskRequest request) {
         
         TaskResponse response = taskService.create(request);
@@ -112,7 +111,7 @@ public class TaskController {
 
 
         @Parameter(
-            description = "Task status to filter by",
+            description = "Task status to filter by", example = "TODO",
             schema = @Schema(implementation = TaskStatus.class)
         )
         @RequestParam(required = false) 

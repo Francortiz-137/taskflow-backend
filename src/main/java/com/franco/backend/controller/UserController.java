@@ -95,6 +95,7 @@ public class UserController {
     // PUT /api/users/{id}/password
     // =========================
 
+    @PreAuthorize("#id == principal.id")
     @PutMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(
@@ -108,9 +109,6 @@ public class UserController {
             @Valid
             ChangePasswordRequest request
     ) {
-        if (principal == null || !principal.id().equals(id)) {
-            throw new BadRequestException("You can only change your own password");
-        }
         userService.changePassword(id, request);
     }
 

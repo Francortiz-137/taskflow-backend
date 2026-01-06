@@ -19,6 +19,7 @@ import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.AuthenticationException;
+import com.franco.backend.security.ratelimit.RateLimitFilter;
 import com.franco.backend.service.IAuthService;
 
 import org.junit.jupiter.api.Nested;
@@ -57,6 +58,10 @@ class AuthControllerTest {
 
     @MockitoBean
     CorsProperties corsProperties;
+
+    @MockitoBean
+    RateLimitFilter rateLimitFilter;
+
 
     private final OffsetDateTime now = OffsetDateTime.now();
 

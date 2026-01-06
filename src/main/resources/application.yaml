@@ -22,3 +22,8 @@ logging:
 server:
   tomcat:
     max-http-form-post-size: 1MB
+
+security:
+  rate-limit:
+    login-per-minute: 5
+    refresh-per-minute: 10
