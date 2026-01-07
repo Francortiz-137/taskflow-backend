@@ -182,7 +182,7 @@ class AuthControllerTest {
                 now
             );
 
-            when(authService.me("user@test.com")).thenReturn(response);
+            when(authService.me(1L)).thenReturn(response);
 
             mockMvc.perform(get("/api/auth/me")
                     .principal(() -> "user@test.com")

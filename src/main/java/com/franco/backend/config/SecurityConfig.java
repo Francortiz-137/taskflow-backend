@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.franco.backend.security.jwt.JwtAuthenticationFilter;
+import com.franco.backend.security.jwt.JwtService;
 import com.franco.backend.security.ratelimit.RateLimitFilter;
 
 import lombok.RequiredArgsConstructor;
@@ -23,11 +24,12 @@ import lombok.RequiredArgsConstructor;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+        JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
 
         return http
             .sessionManagement(session ->
@@ -41,6 +43,11 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(auth -> auth
+
+                // Health-check
+                .requestMatchers(
+                    "/api/hello"
+                ).permitAll()
 
                 // Public auth endpoints
                 .requestMatchers(
@@ -60,12 +67,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
 
-            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class)
-            .addFilterBefore(
-                jwtAuthenticationFilter,
-                UsernamePasswordAuthenticationFilter.class
-            )
-
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(jwtAuthenticationFilter, RateLimitFilter.class)
             .build();
     }
 
@@ -73,5 +76,11 @@ public class SecurityConfig {
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {
+        return new JwtAuthenticationFilter(jwtService);
+    }
+
 }
 

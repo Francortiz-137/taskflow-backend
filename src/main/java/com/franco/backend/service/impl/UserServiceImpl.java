@@ -109,4 +109,16 @@ public class UserServiceImpl implements IUserService {
         return mapper.toResponse(repository.save(user));
     }
 
+    @Override
+    public void resetPassword(Long id, String newPassword) {
+
+        User user = repository.findById(id)
+            .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
+
+        String hash = passwordService.hash(newPassword);
+        user.setPasswordHash(hash);
+
+        repository.save(user);
+    }
+
 }

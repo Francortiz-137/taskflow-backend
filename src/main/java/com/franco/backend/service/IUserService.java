@@ -19,4 +19,6 @@ public interface IUserService {
 
     UserResponse update(Long id, UpdateUserRequest request);
 
+    void resetPassword(Long id, String newPassword);
+
 }
