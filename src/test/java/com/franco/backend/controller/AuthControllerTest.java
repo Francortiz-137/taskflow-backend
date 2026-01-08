@@ -19,9 +19,11 @@ import com.franco.backend.dto.auth.RefreshResponse;
 import com.franco.backend.dto.user.UserResponse;
 import com.franco.backend.entity.UserRole;
 import com.franco.backend.exception.AuthenticationException;
+import com.franco.backend.security.auth.UserPrincipal;
 import com.franco.backend.security.ratelimit.RateLimitFilter;
 import com.franco.backend.service.IAuthService;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +34,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -64,6 +67,11 @@ class AuthControllerTest {
 
 
     private final OffsetDateTime now = OffsetDateTime.now();
+
+    @AfterEach
+    void clearContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     // =========================
     // POST /api/auth/login
@@ -176,7 +184,7 @@ class AuthControllerTest {
             UserResponse response = new UserResponse(
                 1L,
                 "John",
-                "user@test.com",
+                "john@test.com",
                 UserRole.USER,
                 now,
                 now
@@ -184,14 +192,28 @@ class AuthControllerTest {
 
             when(authService.me(1L)).thenReturn(response);
 
-            mockMvc.perform(get("/api/auth/me")
-                    .principal(() -> "user@test.com")
-                    .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("user@test.com"));
-        }
+            UserPrincipal principal = new UserPrincipal(
+                1L,
+                "john@test.com",
+                UserRole.USER
+            );
 
-    }
+            Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.email").value("john@test.com"));
+                }
+
+            }
     
     // =========================
     // POST /api/auth/refresh
