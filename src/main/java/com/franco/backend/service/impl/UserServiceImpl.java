@@ -15,12 +15,13 @@ import com.franco.backend.repository.UserRepository;
 import com.franco.backend.security.PasswordService;
 import com.franco.backend.service.IUserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
@@ -31,6 +32,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public UserResponse create(CreateUserRequest request) {
+        log.info("Admin creating user email={}", request.email());
 
         if (repository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
@@ -111,7 +113,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void resetPassword(Long id, String newPassword) {
-
+        log.info("Changing password for userId={}", id);
         User user = repository.findById(id)
             .orElseThrow(() -> ResourceNotFoundException.userNotFound(id));
 

@@ -22,9 +22,12 @@ import com.franco.backend.service.IAuthService;
 import com.franco.backend.service.auth.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
@@ -54,18 +57,24 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
 
+        log.debug("Authenticating email={}", request.email());
         User user = userRepository.findByEmail(request.email())
-            .orElseThrow(AuthenticationException::new);
+            .orElseThrow(() -> {
+                log.warn("Login failed: user not found");
+                return new AuthenticationException();
+            });
 
         if (!passwordService.matches(
                 request.password(),
                 user.getPasswordHash())
         ) {
+            log.warn("Login failed: invalid password for userId={}", user.getId());
             throw new AuthenticationException();
         }
 
         String refreshToken = refreshTokenService.issue(user);
 
+        log.info("User {} logged in successfully", user.getId());
         return new LoginResponse(
             user.getId(),
             user.getName(),

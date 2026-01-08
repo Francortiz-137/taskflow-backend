@@ -39,9 +39,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.security.core.Authentication;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+
 
 
 @AutoConfigureMockMvc(addFilters = false)
@@ -206,14 +205,13 @@ class AuthControllerTest {
                 );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
             mockMvc.perform(get("/api/auth/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.email").value("john@test.com"));
-                }
+        }
 
-            }
+    }
     
     // =========================
     // POST /api/auth/refresh

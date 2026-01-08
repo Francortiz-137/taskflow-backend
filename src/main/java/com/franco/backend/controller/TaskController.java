@@ -14,6 +14,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.net.URI;
 
+@Slf4j
 @Tag(name = "Tasks", description = "Task management endpoints")
 @RestController
 @RequestMapping("/api/tasks")
@@ -63,7 +65,7 @@ public class TaskController {
     produces = MediaType.APPLICATION_JSON_VALUE
 )
     public ResponseEntity<TaskResponse> create(@RequestBody @Valid CreateTaskRequest request) {
-        
+        log.info("Creating task");
         TaskResponse response = taskService.create(request);
 
         return ResponseEntity
@@ -125,6 +127,7 @@ public class TaskController {
         @RequestParam(required = false) 
         String title
     ) {
+        log.debug("Listing tasks page={}, size={}", page, size);
         Page<TaskResponse> pageResponse = taskService.findAll(page, size, sort, status, title);
 
         return new PageResponse<>(
@@ -207,6 +210,7 @@ public class TaskController {
             @Valid 
             UpdateTaskRequest request
     ) {
+        log.info("Updating task id={}", id);
         return taskService.update(id, request);
     }
 
@@ -262,6 +266,7 @@ public class TaskController {
             @Valid 
             UpdateTaskStatusRequest request
     ) {
+        log.info("Updating status of task id={}", id);
         return taskService.updateStatus(id, request);
     }
 
@@ -297,6 +302,7 @@ public class TaskController {
         @Positive(message = "{validation.id.positive}")
         Long id
     ) {    
+            log.warn("Deleting task id={}", id);
             taskService.delete(id);
     }
 }

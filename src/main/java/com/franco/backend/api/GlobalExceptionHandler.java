@@ -49,22 +49,27 @@ public class GlobalExceptionHandler {
                 ApiException ex,
                 HttpServletRequest request
         ) {
-        String message = messageSource.getMessage(
-                ex.getMessageKey(),
-                ex.getArgs(),
-                ex.getMessageKey(), // fallback visible
-                LocaleContextHolder.getLocale()
-        );
+                log.warn(
+                "Handled API exception [{}] on {}",
+                        ex.getErrorCode(),
+                        request.getRequestURI()
+                );
+                String message = messageSource.getMessage(
+                        ex.getMessageKey(),
+                        ex.getArgs(),
+                        ex.getMessageKey(), // fallback visible
+                        LocaleContextHolder.getLocale()
+                );
 
-        ApiErrorResponse response = new ApiErrorResponse(
-                OffsetDateTime.now(),
-                ex.getStatus().value(),
-                ex.getErrorCode().name(),
-                message,
-                request.getRequestURI()
-        );
+                ApiErrorResponse response = new ApiErrorResponse(
+                        OffsetDateTime.now(),
+                        ex.getStatus().value(),
+                        ex.getErrorCode().name(),
+                        message,
+                        request.getRequestURI()
+                );
 
-        return ResponseEntity.status(ex.getStatus()).body(response);
+                return ResponseEntity.status(ex.getStatus()).body(response);
         }
 
 
@@ -241,12 +246,17 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
+        log.error(
+            "Unexpected error on {}",
+            request.getRequestURI(),
+            ex
+        );
         String message = messageSource.getMessage(
-        "error.internal",
-        null,
-        "Unexpected error",
-        LocaleContextHolder.getLocale()
-);
+                "error.internal",
+                null,
+                "Unexpected error",
+                LocaleContextHolder.getLocale()
+        );
 
         ApiErrorResponse response = new ApiErrorResponse(
                 OffsetDateTime.now(),

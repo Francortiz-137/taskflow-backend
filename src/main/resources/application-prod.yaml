@@ -38,3 +38,9 @@ security:
   jwt:
     secret: ${JWT_SECRET}
     expiration-seconds: ${JWT_ACCESS_MINUTES}
+
+logging:
+  level:
+    root: INFO
+    com.franco.backend: INFO
+    org.hibernate: WARN

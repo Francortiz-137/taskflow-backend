@@ -15,6 +15,7 @@ import com.franco.backend.repository.specification.TaskSpecifications;
 import com.franco.backend.security.SecurityUtils;
 import com.franco.backend.service.ITaskService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,7 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskServiceImpl implements ITaskService {
@@ -33,8 +34,11 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public TaskResponse create(CreateTaskRequest request) {
-        Task task = mapper.toEntity(request);
+        Long userId = SecurityUtils.currentUserId();
 
+        log.info("User {} creating task", userId);
+
+        Task task = mapper.toEntity(request);
         task.setStatus(TaskStatus.TODO);
 
         return mapper.toResponse(repository.save(task));
@@ -66,6 +70,9 @@ public class TaskServiceImpl implements ITaskService {
 
     @Override
     public void delete(Long id) {
+        Long userId = SecurityUtils.currentUserId();
+        log.warn("User {} deleting task {}", userId, id);
+        
         Task task = getOwnedTaskOrThrow(id);
 
         repository.delete(task);

@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,6 +19,7 @@ import com.franco.backend.security.auth.UserPrincipal;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @AllArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -32,26 +34,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // 1️⃣ Si no hay header o no es Bearer → seguimos sin autenticar
+        // 1 Si no hay header o no es Bearer → seguimos sin autenticar
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 2️⃣ Extraemos el token
+        // 2 Extraemos el token
         String token = authHeader.substring(7);
 
-        // 3️⃣ Validamos token
+        // 3 Validamos token
         if (!jwtService.isValid(token)) {
+            log.warn("Invalid JWT token");
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 4️⃣ Extraemos datos del token
+        // 4 Extraemos datos del token
         String email = jwtService.extractSubject(token).orElse(null);
         UserRole role = jwtService.extractRole(token).orElse(null);
         Long userId = jwtService.extractUserId(token).orElse(null);
 
+        log.debug("JWT authenticated for userId={}", userId);
         UserPrincipal principal = new UserPrincipal(
                                         userId,
                                         email,
@@ -62,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (email != null && role != null && userId != null &&
                  SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 5️⃣ Crear Authentication
+            // 5 Crear Authentication
             UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 principal,
@@ -75,12 +79,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new WebAuthenticationDetailsSource().buildDetails(request)
             );
 
-            // 6️⃣ Guardar en contexto
+            // 6 Guardar en contexto
             SecurityContextHolder.getContext()
                     .setAuthentication(authentication);
         }
 
-        // 7️⃣ Continuar request
+        // 7 Continuar request
         filterChain.doFilter(request, response);
     }
 }

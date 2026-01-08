@@ -29,3 +29,9 @@ security:
   jwt:
     secret: ${JWT_SECRET}
     expiration-seconds: ${JWT_ACCESS_MINUTES}
+
+logging:
+  level:
+    com.franco.backend: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

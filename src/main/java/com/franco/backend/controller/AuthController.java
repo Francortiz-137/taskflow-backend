@@ -22,12 +22,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @Tag(name = "Authentication", description = "Authentication and self-service endpoints")
 @RestController
 @RequestMapping("/api/auth")
@@ -90,6 +92,7 @@ public class AuthController {
     public LoginResponse login(
         @RequestBody @Valid LoginRequest request
     ) {
+        log.info("Login attempt for email={}", request.email());
         return authService.login(request);
     }
 
@@ -115,6 +118,7 @@ public class AuthController {
     public RefreshResponse refresh(
             @RequestBody @Valid RefreshRequest request
     ) {
+        log.info("Refreshing token");
         return authService.refresh(request);
     }
 
@@ -139,6 +143,7 @@ public class AuthController {
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@RequestBody @Valid LogoutRequest request) {
+        log.info("Logout requested");
         authService.logout(request);
     }
 
@@ -161,6 +166,7 @@ public class AuthController {
     })
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal UserPrincipal principal) {
+        log.debug("Fetching profile for userId={}", principal.id());
         return authService.me(principal.id());
     }
 

@@ -18,6 +18,7 @@ spring:
 logging:
   level:
     root: INFO
+    com.franco.backend: INFO
 
 server:
   tomcat:
