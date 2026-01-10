@@ -87,4 +87,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 7 Continuar request
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/actuator");
+    }
+
 }

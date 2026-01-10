@@ -27,4 +27,13 @@ public abstract class AuditableEntity {
     public Long getUpdatedBy() {
         return updatedBy;
     }
+
+    // seeding/test
+    void setCreatedBy(Long createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    void setUpdatedBy(Long updatedBy) {
+        this.updatedBy = updatedBy;
+    }
 }

@@ -1,6 +1,5 @@
 package com.franco.backend.service;
 
-import com.franco.backend.dto.auth.AuthResponse;
 import com.franco.backend.dto.auth.LoginRequest;
 import com.franco.backend.dto.auth.LoginResponse;
 import com.franco.backend.dto.auth.LogoutRequest;

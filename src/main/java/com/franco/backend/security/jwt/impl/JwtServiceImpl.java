@@ -41,8 +41,8 @@ public class JwtServiceImpl implements JwtService {
 
         Instant now = Instant.now();
         Instant expiration = now.plus(
-            properties.expirationMinutes(),
-            ChronoUnit.MINUTES
+            properties.expirationSeconds(),
+            ChronoUnit.SECONDS
         );
 
         return Jwts.builder()

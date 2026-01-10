@@ -62,6 +62,8 @@ dependencies {
     // Bucket4j
     implementation 'com.bucket4j:bucket4j-core:8.7.0'
 
+    // Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 }
 

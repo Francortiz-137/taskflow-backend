@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -43,16 +44,15 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(auth -> auth
-
-                // Health-check
+                // Actuator (health checks)
                 .requestMatchers(
-                    "/api/hello"
+                    "/actuator/health"
                 ).permitAll()
-
                 // Public auth endpoints
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/refresh",
+                    "/api/auth/register",
                     "/api/auth/logout"
                 ).permitAll()
 
@@ -81,6 +81,16 @@ public class SecurityConfig {
     JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService) {
         return new JwtAuthenticationFilter(jwtService);
     }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            throw new UnsupportedOperationException(
+                "UserDetailsService is not used. JWT authentication only."
+            );
+        };
+    }
+
 
 }
 

@@ -3,7 +3,6 @@ package com.franco.backend.controller;
 import com.franco.backend.config.SwaggerExamples;
 import com.franco.backend.dto.common.ApiErrorResponse;
 import com.franco.backend.dto.user.AdminResetPasswordRequest;
-import com.franco.backend.dto.user.ChangePasswordRequest;
 import com.franco.backend.dto.user.CreateUserRequest;
 import com.franco.backend.dto.user.UpdateUserRequest;
 import com.franco.backend.dto.user.UserResponse;
