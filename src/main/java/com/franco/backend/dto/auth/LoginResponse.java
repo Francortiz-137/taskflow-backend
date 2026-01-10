@@ -9,5 +9,6 @@ public record LoginResponse(
     String email,
     UserRole role,
     OffsetDateTime createdAt,
+    String accessToken,
     String refreshToken
 ) {}

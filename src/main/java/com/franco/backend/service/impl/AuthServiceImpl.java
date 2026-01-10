@@ -71,6 +71,11 @@ public class AuthServiceImpl implements IAuthService {
             throw new AuthenticationException();
         }
 
+        String accessToken = jwtService.generateToken(
+        user.getId(),
+        user.getEmail(),
+        user.getRole()
+    );
         String refreshToken = refreshTokenService.issue(user);
 
         log.info("User {} logged in successfully", user.getId());
@@ -80,6 +85,7 @@ public class AuthServiceImpl implements IAuthService {
             user.getEmail(),
             user.getRole(),
             user.getCreatedAt(),
+            accessToken,
             refreshToken
         );
 
